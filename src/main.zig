@@ -1,19 +1,38 @@
 const std = @import("std");
 
+// Example bytecode we want to execute.
+//
+// // Set the stat
+// PUSH32 0xFF01000000000000000000000000000000000000000000000000000000000000
+// PUSH1 0
+// MSTORE
+
+// // Example
+// PUSH1 2
+// PUSH1 0
+// RETURN
+
+const OpCode = enum(u8) {
+    PUSH1 = 0x60,
+    PUSH32 = 0x7f,
+    MSTORE = 0x52,
+    RETURN = 0xf3,
+};
+
 pub fn main() !void {
-    std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
-    const stdout_file = std.io.getStdOut().writer();
-    var bw = std.io.bufferedWriter(stdout_file);
-    const stdout = bw.writer();
+    // Dummy bytecode
+    const bytecode = [_]u8{
+        @intFromEnum(OpCode.PUSH1),
+        @intFromEnum(OpCode.PUSH32),
+    };
 
-    try stdout.print("Run `zig build test` to run the tests.\n", .{});
-
-    try bw.flush();
+    for (bytecode) |b| {
+        const op: OpCode = @enumFromInt(b);
+        std.debug.print("op is {s}\n", .{@tagName(op)});
+    }
 }
 
 test "simple test" {
-    var list = std.ArrayList(i32).init(std.testing.allocator);
-    defer list.deinit();
-    try list.append(42);
-    try std.testing.expectEqual(@as(i32, 42), list.pop());
+    // TODO
+    // try std.testing.expectEqual(@as(i32, 42), list.pop());
 }
