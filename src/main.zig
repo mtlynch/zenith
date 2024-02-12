@@ -30,11 +30,7 @@ const Operation = struct {
     Args: std.ArrayList(u8), // TODO: Handle different typed args.
 };
 
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    const allocator = gpa.allocator();
-    defer _ = gpa.deinit();
-
+const BytecodeReader = struct {
     // zig fmt: off
     const bytecode = [_]u8{
         @intFromEnum(OpCode.PUSH1), 0x01,
@@ -45,6 +41,27 @@ pub fn main() !void {
         @intFromEnum(OpCode.RETURN),
     };
     // zig fmt: on
+
+    bytes: []const u8 = &bytecode,
+    index: u32 = 0,
+
+    pub fn nextByte(self: *BytecodeReader) u8 {
+        const b = self.bytes[self.index];
+        self.index += 1;
+        return b;
+    }
+
+    pub fn done(self: BytecodeReader) bool {
+        return self.index >= self.bytes.len;
+    }
+};
+
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+    defer _ = gpa.deinit();
+
+    var bcReader = BytecodeReader{};
 
     const OperationList = std.ArrayList(Operation);
     const ByteList = std.ArrayList(u8);
@@ -58,20 +75,15 @@ pub fn main() !void {
         }
     }
 
-    var byteIndex: u32 = 0;
-    while (byteIndex < bytecode.len) {
-        const b = bytecode[byteIndex];
-        byteIndex = byteIndex + 1;
-
-        const op: OpCode = @enumFromInt(b);
+    while (!bcReader.done()) {
+        const op: OpCode = @enumFromInt(bcReader.nextByte());
         switch (op) {
             OpCode.PUSH1 => {
                 std.debug.print("Handle {s}\n", .{@tagName(op)});
                 var args = ByteList.init(allocator);
-                try args.append(bytecode[byteIndex]);
+                try args.append(bcReader.nextByte());
                 const operation = Operation{ .Code = op, .Args = args };
                 try ops.append(operation);
-                byteIndex = byteIndex + 1;
                 // TODO: Read values onto stack.
             },
             OpCode.PUSH32 => {
