@@ -46,6 +46,7 @@ const BytecodeReader = struct {
     index: u32 = 0,
 
     pub fn nextByte(self: *BytecodeReader) u8 {
+        // TODO: Handle out of bounds error.
         const b = self.bytes[self.index];
         self.index += 1;
         return b;
@@ -56,35 +57,20 @@ const BytecodeReader = struct {
     }
 };
 
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    const allocator = gpa.allocator();
-    defer _ = gpa.deinit();
-
-    var bcReader = BytecodeReader{};
-
-    const OperationList = std.ArrayList(Operation);
-    const ByteList = std.ArrayList(u8);
-
-    var ops = OperationList.init(allocator);
-    defer {
-        const slice = ops.toOwnedSlice() catch &.{};
-        for (slice) |op| {
-            std.debug.print("freeing args for {s}\n", .{@tagName(op.Code)});
-            op.Args.deinit();
+const VM = struct {
+    pub fn run(self: VM, reader: *BytecodeReader) !void {
+        while (!reader.done()) {
+            try self.nextInstruction(reader);
         }
     }
 
-    while (!bcReader.done()) {
-        const op: OpCode = @enumFromInt(bcReader.nextByte());
+    pub fn nextInstruction(_: VM, reader: *BytecodeReader) !void {
+        const op: OpCode = @enumFromInt(reader.nextByte());
         switch (op) {
             OpCode.PUSH1 => {
                 std.debug.print("Handle {s}\n", .{@tagName(op)});
-                var args = ByteList.init(allocator);
-                try args.append(bcReader.nextByte());
-                const operation = Operation{ .Code = op, .Args = args };
-                try ops.append(operation);
-                // TODO: Read values onto stack.
+                _ = reader.nextByte();
+                // TODO: Assign value onto stack.
             },
             OpCode.PUSH32 => {
                 std.debug.print("Handle {s}\n", .{@tagName(op)});
@@ -100,6 +86,13 @@ pub fn main() !void {
             },
         }
     }
+};
+
+pub fn main() !void {
+    var bcReader = BytecodeReader{};
+
+    const evm = VM{};
+    try evm.run(&bcReader);
 }
 
 test "simple test" {
