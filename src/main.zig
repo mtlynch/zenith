@@ -58,18 +58,31 @@ const BytecodeReader = struct {
 };
 
 const VM = struct {
-    pub fn run(self: VM, reader: *BytecodeReader) !void {
+    stack: std.ArrayList(u8) = undefined,
+    memory: std.ArrayList(u32) = undefined,
+
+    pub fn init(self: *VM, allocator: std.mem.Allocator) void {
+        self.stack = std.ArrayList(u8).init(allocator);
+        self.memory = std.ArrayList(u32).init(allocator);
+    }
+
+    pub fn deinit(self: *VM) void {
+        self.stack.deinit();
+        self.memory.deinit();
+    }
+
+    pub fn run(self: *VM, reader: *BytecodeReader) !void {
         while (!reader.done()) {
             try self.nextInstruction(reader);
         }
     }
 
-    pub fn nextInstruction(_: VM, reader: *BytecodeReader) !void {
+    pub fn nextInstruction(self: *VM, reader: *BytecodeReader) !void {
         const op: OpCode = @enumFromInt(reader.nextByte());
         switch (op) {
             OpCode.PUSH1 => {
                 std.debug.print("Handle {s}\n", .{@tagName(op)});
-                _ = reader.nextByte();
+                try self.stack.append(reader.nextByte());
                 // TODO: Assign value onto stack.
             },
             OpCode.PUSH32 => {
@@ -89,9 +102,15 @@ const VM = struct {
 };
 
 pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+    defer _ = gpa.deinit();
+
     var bcReader = BytecodeReader{};
 
-    const evm = VM{};
+    var evm = VM{};
+    evm.init(allocator);
+    defer evm.deinit();
     try evm.run(&bcReader);
 }
 
