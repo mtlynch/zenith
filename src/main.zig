@@ -25,7 +25,16 @@ const OpCode = enum(u8) {
     RETURN = 0xf3,
 };
 
+const Operation = struct {
+    Code: OpCode,
+    Args: std.ArrayList(u8), // TODO: Handle different typed args.
+};
+
 pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+    defer _ = gpa.deinit();
+
     // zig fmt: off
     const bytecode = [_]u8{
         @intFromEnum(OpCode.PUSH1), 0x01,
@@ -37,6 +46,18 @@ pub fn main() !void {
     };
     // zig fmt: on
 
+    const OperationList = std.ArrayList(Operation);
+    const ByteList = std.ArrayList(u8);
+
+    var ops = OperationList.init(allocator);
+    defer {
+        const slice = ops.toOwnedSlice() catch &.{};
+        for (slice) |op| {
+            std.debug.print("freeing args for {s}\n", .{@tagName(op.Code)});
+            op.Args.deinit();
+        }
+    }
+
     var byteIndex: u32 = 0;
     while (byteIndex < bytecode.len) {
         const b = bytecode[byteIndex];
@@ -46,6 +67,10 @@ pub fn main() !void {
         switch (op) {
             OpCode.PUSH1 => {
                 std.debug.print("Handle {s}\n", .{@tagName(op)});
+                var args = ByteList.init(allocator);
+                try args.append(bytecode[byteIndex]);
+                const operation = Operation{ .Code = op, .Args = args };
+                try ops.append(operation);
                 byteIndex = byteIndex + 1;
                 // TODO: Read values onto stack.
             },
