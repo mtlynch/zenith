@@ -29,6 +29,7 @@ const OpCode = enum(u8) {
     PUSH32 = 0x7f,
     MSTORE = 0x52,
     RETURN = 0xf3,
+    _,
 };
 
 const Operation = struct {
@@ -63,6 +64,10 @@ const BytecodeReader = struct {
     }
 };
 
+const VMError = error{
+    NotImplemented,
+};
+
 const VM = struct {
     stack: std.ArrayList(u8) = undefined,
     memory: std.ArrayList(u32) = undefined,
@@ -94,14 +99,14 @@ const VM = struct {
             },
             OpCode.PUSH32 => {
                 std.debug.print("Handle {s}\n", .{@tagName(op)});
-                // TODO: Read values onto stack.
+                return VMError.NotImplemented;
             },
             OpCode.MSTORE => {
                 const offset = self.stack.pop();
                 const value = self.stack.pop();
                 std.debug.print("Handle {s} offset={d}, value={d}\n", .{ @tagName(op), offset, value });
                 if (offset != 0) {
-                    // TODO: Raise error that we don't know how to handle this.
+                    return VMError.NotImplemented;
                 }
                 std.debug.print("Set memory to {d}\n", .{value});
                 try self.memory.append(value);
@@ -111,14 +116,18 @@ const VM = struct {
                 const size = self.stack.pop();
                 std.debug.print("Handle {s} offset={d}, size={d}\n", .{ @tagName(op), offset, size });
                 if (size != 1) {
-                    // TODO: Raise error that we don't know how to handle this.
+                    return VMError.NotImplemented;
                 }
-                if (offset != 32) {
-                    // TODO: Raise error that we don't know how to handle this.
+                if (offset != 31) {
+                    return VMError.NotImplemented;
                 }
                 const val = self.memory.getLast();
                 const shrunk: u8 = @as(u8, @truncate(val));
                 std.debug.print("RETURN {d}\n", .{shrunk});
+            },
+            else => {
+                std.debug.print("Not yet handling opcode {d}\n", .{op});
+                return VMError.NotImplemented;
             },
         }
     }
