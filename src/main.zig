@@ -61,7 +61,14 @@ const VM = struct {
     }
 
     pub fn nextInstruction(self: *VM, reader: anytype) !bool {
-        const op: OpCode = reader.readEnum(OpCode, std.builtin.Endian.Big) catch return false;
+        const op: OpCode = reader.readEnum(OpCode, std.builtin.Endian.Big) catch |err| switch (err) {
+            error.EndOfStream => {
+                return false;
+            },
+            else => {
+                return err;
+            },
+        };
         switch (op) {
             OpCode.PUSH1 => {
                 self.printVerbose("Handle {s}\n", .{@tagName(op)});
