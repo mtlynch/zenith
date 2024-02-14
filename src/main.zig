@@ -1,4 +1,6 @@
 const std = @import("std");
+const time = std.time;
+const Timer = std.time.Timer;
 
 // Example bytecode we want to execute.
 //
@@ -138,7 +140,13 @@ pub fn main() !void {
     var evm = VM{};
     evm.init(allocator);
     defer evm.deinit();
+
+    var timer = try Timer.start();
+    const start = timer.lap();
     try evm.run(&bcReader);
+    const end = timer.read();
+    const elapsed_micros = @as(f64, @floatFromInt(end - start)) / time.ns_per_us;
+    std.debug.print("time: {d:.1}µs\n", .{elapsed_micros});
 }
 
 test "simple test" {
