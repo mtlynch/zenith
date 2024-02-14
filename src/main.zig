@@ -34,33 +34,6 @@ const OpCode = enum(u8) {
     _,
 };
 
-const BytecodeReader = struct {
-    // zig fmt: off
-    const bytecode = [_]u8{
-        @intFromEnum(OpCode.PUSH1), 0x01,
-        @intFromEnum(OpCode.PUSH1), 0x00,
-        @intFromEnum(OpCode.MSTORE),
-        @intFromEnum(OpCode.PUSH1), 0x01,
-        @intFromEnum(OpCode.PUSH1), 0x1f,
-        @intFromEnum(OpCode.RETURN),
-    };
-    // zig fmt: on
-
-    bytes: []const u8 = &bytecode,
-    index: u32 = 0,
-
-    pub fn nextByte(self: *BytecodeReader) u8 {
-        // TODO: Handle out of bounds error.
-        const b = self.bytes[self.index];
-        self.index += 1;
-        return b;
-    }
-
-    pub fn done(self: BytecodeReader) bool {
-        return self.index >= self.bytes.len;
-    }
-};
-
 const VMError = error{
     NotImplemented,
 };
@@ -83,21 +56,20 @@ const VM = struct {
         self.memory.deinit();
     }
 
-    pub fn run(self: *VM, reader: *BytecodeReader) !void {
-        while (!reader.done()) {
-            try self.nextInstruction(reader);
-        }
+    pub fn run(self: *VM, reader: anytype) !void {
+        while (try self.nextInstruction(reader)) {}
     }
 
-    pub fn nextInstruction(self: *VM, reader: *BytecodeReader) !void {
-        const op: OpCode = @enumFromInt(reader.nextByte());
+    pub fn nextInstruction(self: *VM, reader: anytype) !bool {
+        const op: OpCode = reader.readEnum(OpCode, std.builtin.Endian.Big) catch return false;
         switch (op) {
             OpCode.PUSH1 => {
                 self.printVerbose("Handle {s}\n", .{@tagName(op)});
-                const b = reader.nextByte();
+                const b = try reader.readByte();
                 self.printVerbose("Pushed {d} onto stack\n", .{b});
                 try self.stack.append(b);
                 self.gasConsumed += 3;
+                return true;
             },
             OpCode.PUSH32 => {
                 self.printVerbose("Handle {s}\n", .{@tagName(op)});
@@ -117,6 +89,7 @@ const VM = struct {
                 const newState = ((self.memory.items.len << 2) / 512) + (3 * self.memory.items.len);
                 self.gasConsumed += 3;
                 self.gasConsumed += @as(u64, newState - oldState);
+                return true;
             },
             OpCode.RETURN => {
                 const offset = self.stack.pop();
@@ -132,6 +105,7 @@ const VM = struct {
                 const shrunk: u8 = @as(u8, @truncate(val));
                 self.returnValue = shrunk;
                 self.printVerbose("RETURN {d}\n", .{shrunk});
+                return true;
             },
             else => {
                 self.printVerbose("Not yet handling opcode {d}\n", .{op});
@@ -154,7 +128,18 @@ pub fn main() !void {
     const allocator = gpa.allocator();
     defer _ = gpa.deinit();
 
-    var bcReader = BytecodeReader{};
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(OpCode.PUSH1), 0x01,
+        @intFromEnum(OpCode.PUSH1), 0x00,
+        @intFromEnum(OpCode.MSTORE),
+        @intFromEnum(OpCode.PUSH1), 0x01,
+        @intFromEnum(OpCode.PUSH1), 0x1f,
+        @intFromEnum(OpCode.RETURN),
+    };
+    // zig fmt: on
+    var stream = std.io.fixedBufferStream(&bytecode);
+    var bytecodeReader = stream.reader();
 
     var evm = VM{};
     evm.init(allocator, verboseMode);
@@ -162,7 +147,7 @@ pub fn main() !void {
 
     var timer = try Timer.start();
     const start = timer.lap();
-    try evm.run(&bcReader);
+    try evm.run(&bytecodeReader);
     const end = timer.read();
     const elapsed_micros = @as(f64, @floatFromInt(end - start)) / time.ns_per_us;
     std.debug.print("EVM gas used:    {}\n", .{evm.gasConsumed});
