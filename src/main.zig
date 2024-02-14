@@ -32,11 +32,6 @@ const OpCode = enum(u8) {
     _,
 };
 
-const Operation = struct {
-    Code: OpCode,
-    Args: std.ArrayList(u8), // TODO: Handle different typed args.
-};
-
 const BytecodeReader = struct {
     // zig fmt: off
     const bytecode = [_]u8{
