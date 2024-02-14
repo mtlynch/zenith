@@ -68,6 +68,7 @@ const VMError = error{
 const VM = struct {
     stack: std.ArrayList(u8) = undefined,
     memory: std.ArrayList(u32) = undefined,
+    returnValue: u8 = undefined,
 
     pub fn init(self: *VM, allocator: std.mem.Allocator) void {
         self.stack = std.ArrayList(u8).init(allocator);
@@ -120,6 +121,7 @@ const VM = struct {
                 }
                 const val = self.memory.getLast();
                 const shrunk: u8 = @as(u8, @truncate(val));
+                self.returnValue = shrunk;
                 std.debug.print("RETURN {d}\n", .{shrunk});
             },
             else => {
