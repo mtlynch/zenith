@@ -70,6 +70,7 @@ const VM = struct {
     memory: std.ArrayList(u32) = undefined,
     returnValue: u8 = undefined,
     verbose: bool = false,
+    gasConsumed: u64 = 0,
 
     pub fn init(self: *VM, allocator: std.mem.Allocator, verbose: bool) void {
         self.stack = std.ArrayList(u8).init(allocator);
@@ -96,6 +97,7 @@ const VM = struct {
                 const b = reader.nextByte();
                 self.printVerbose("Pushed {d} onto stack\n", .{b});
                 try self.stack.append(b);
+                self.gasConsumed += 3;
             },
             OpCode.PUSH32 => {
                 self.printVerbose("Handle {s}\n", .{@tagName(op)});
@@ -109,7 +111,12 @@ const VM = struct {
                     return VMError.NotImplemented;
                 }
                 self.printVerbose("Set memory to {d}\n", .{value});
+
+                const oldState = ((self.memory.items.len << 2) / 512) + (3 * self.memory.items.len);
                 try self.memory.append(value);
+                const newState = ((self.memory.items.len << 2) / 512) + (3 * self.memory.items.len);
+                self.gasConsumed += 3;
+                self.gasConsumed += @as(u64, newState - oldState);
             },
             OpCode.RETURN => {
                 const offset = self.stack.pop();
@@ -158,8 +165,9 @@ pub fn main() !void {
     try evm.run(&bcReader);
     const end = timer.read();
     const elapsed_micros = @as(f64, @floatFromInt(end - start)) / time.ns_per_us;
-    std.debug.print("return value: {}\n", .{evm.returnValue});
-    std.debug.print("time: {d:.1}µs\n", .{elapsed_micros});
+    std.debug.print("EVM gas used:    {}\n", .{evm.gasConsumed});
+    std.debug.print("execution time:  {d:.1}µs\n", .{elapsed_micros});
+    std.debug.print("0x{x:0>2}\n", .{evm.returnValue});
 }
 
 test "simple test" {
