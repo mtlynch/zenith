@@ -156,6 +156,27 @@ pub fn main() !void {
 }
 
 test "simple test" {
-    // TODO
-    // try std.testing.expectEqual(@as(i32, 42), list.pop());
+    const allocator = std.testing.allocator;
+
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(OpCode.PUSH1), 0x01,
+        @intFromEnum(OpCode.PUSH1), 0x00,
+        @intFromEnum(OpCode.MSTORE),
+        @intFromEnum(OpCode.PUSH1), 0x01,
+        @intFromEnum(OpCode.PUSH1), 0x1f,
+        @intFromEnum(OpCode.RETURN),
+    };
+    // zig fmt: on
+    var stream = std.io.fixedBufferStream(&bytecode);
+    var bytecodeReader = stream.reader();
+
+    var evm = VM{};
+    evm.init(allocator, false);
+    defer evm.deinit();
+
+    try evm.run(&bytecodeReader);
+
+    try std.testing.expectEqual(@as(u64, 18), evm.gasConsumed);
+    try std.testing.expectEqual(@as(u32, 0x01), evm.returnValue);
 }
