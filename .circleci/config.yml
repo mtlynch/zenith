@@ -13,7 +13,7 @@ jobs:
       - run:
           name: Run unit tests
           command: nix develop --command zig build test --summary all
-  run_unit_tests:
+  benchmark:
     docker:
       - image: nixos/nix:2.15.0
     steps:
