@@ -1,0 +1,20 @@
+version: 2.1
+jobs:
+  run_unit_tests:
+    docker:
+      - image: nixos/nix:2.15.0
+    steps:
+      - run:
+          name: Enable Nix flakes
+          command: echo 'experimental-features = nix-command flakes' >> /etc/nix/nix.conf
+      - checkout
+      - attach_workspace:
+          at: ./
+      - run:
+          name: Run unit tests
+          command: nix develop --command zig build test --summary all
+workflows:
+  version: 2
+  test-deploy:
+    jobs:
+      - run_unit_tests
