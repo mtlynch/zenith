@@ -1,5 +1,8 @@
 # eth-zvm
 
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/mtlynch/eth-zvm/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/mtlynch/eth-zvm/tree/master)
+[![License](http://img.shields.io/:license-mit-blue.svg?style=flat-square)](LICENSE)
+
 An implementation of the Ethereum virtual machine in pure Zig.
 
 ## Scope
