@@ -142,14 +142,16 @@ test "simple test" {
     };
     // zig fmt: on
     var stream = std.io.fixedBufferStream(&bytecode);
-    var bytecodeReader = stream.reader();
+    var reader = stream.reader();
 
     var evm = VM{};
     evm.init(allocator, false);
     defer evm.deinit();
 
-    try evm.run(&bytecodeReader);
+    try evm.run(&reader);
 
     try std.testing.expectEqual(@as(u64, 18), evm.gasConsumed);
     try std.testing.expectEqual(@as(u32, 0x01), evm.returnValue);
+    try std.testing.expectEqualSlices(u8, &[_]u8{}, evm.stack.items);
+    try std.testing.expectEqualSlices(u32, &[_]u32{1}, evm.memory.items);
 }
