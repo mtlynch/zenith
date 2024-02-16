@@ -4,7 +4,6 @@ const Timer = std.time.Timer;
 
 const OpCode = enum(u8) {
     PUSH1 = 0x60,
-    PUSH32 = 0x7f,
     MSTORE = 0x52,
     RETURN = 0xf3,
     _,
@@ -53,10 +52,6 @@ const VM = struct {
                 try self.stack.append(b);
                 self.gasConsumed += 3;
                 return true;
-            },
-            OpCode.PUSH32 => {
-                self.printVerbose("Handle {s}\n", .{@tagName(op)});
-                return VMError.NotImplemented;
             },
             OpCode.MSTORE => {
                 const offset = self.stack.pop();
