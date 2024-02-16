@@ -44,6 +44,9 @@ jobs:
       - run:
           name: Benchmark evm
           command: ./evm run --codefile testdata/simple.bytecode --statdump
+      - run:
+          name: Disassemble bytecode
+          command: ./evm disasm testdata/simple.bytecode
 workflows:
   version: 2
   test-deploy:
