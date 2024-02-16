@@ -38,7 +38,7 @@ const VM = struct {
     }
 
     pub fn nextInstruction(self: *VM, reader: anytype) !bool {
-        const op: OpCode = reader.readEnum(OpCode, std.builtin.Endian.Big) catch |err| switch (err) {
+        const op: OpCode = reader.readEnum(OpCode, std.builtin.Endian.Little) catch |err| switch (err) {
             error.EndOfStream => {
                 return false;
             },
@@ -112,18 +112,7 @@ pub fn main() !void {
     const allocator = gpa.allocator();
     defer _ = gpa.deinit();
 
-    // zig fmt: off
-    const bytecode = [_]u8{
-        @intFromEnum(OpCode.PUSH1), 0x01,
-        @intFromEnum(OpCode.PUSH1), 0x00,
-        @intFromEnum(OpCode.MSTORE),
-        @intFromEnum(OpCode.PUSH1), 0x01,
-        @intFromEnum(OpCode.PUSH1), 0x1f,
-        @intFromEnum(OpCode.RETURN),
-    };
-    // zig fmt: on
-    var stream = std.io.fixedBufferStream(&bytecode);
-    var bytecodeReader = stream.reader();
+    var reader = std.io.getStdIn().reader();
 
     var evm = VM{};
     evm.init(allocator, verboseMode);
@@ -131,7 +120,7 @@ pub fn main() !void {
 
     var timer = try Timer.start();
     const start = timer.lap();
-    try evm.run(&bytecodeReader);
+    try evm.run(&reader);
     const end = timer.read();
     const elapsed_micros = @as(f64, @floatFromInt(end - start)) / time.ns_per_us;
     std.debug.print("EVM gas used:    {}\n", .{evm.gasConsumed});

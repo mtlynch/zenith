@@ -12,19 +12,19 @@ For now, this is a just-for-fun experiment to learn more about Zig and Ethereum.
 ## Run VM
 
 ```bash
-zig build run
+echo '60016000526001601ff3' | xxd -r -p | zig build run
 ```
 
 In verbose mode:
 
 ```bash
-zig build run -- -v
+echo '60016000526001601ff3' | xxd -r -p | zig build run -- -v
 ```
 
 For max speed:
 
 ```bash
-zig build run -Doptimize=ReleaseFast
+echo '60016000526001601ff3' | xxd -r -p | zig build run -Doptimize=ReleaseFast
 ```
 
 ## Run unit tests

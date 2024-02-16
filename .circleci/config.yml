@@ -25,7 +25,7 @@ jobs:
           at: ./
       - run:
           name: Benchmark eth-zvm
-          command: nix develop --command zig build run -Doptimize=ReleaseFast
+          command: nix develop --command bash -c 'xxd -r -p < testdata/simple.bytecode | zig build run -Doptimize=ReleaseFast'
   benchmark_evm:
     docker:
       - image: cimg/base:2024.01
@@ -43,7 +43,7 @@ jobs:
               | tar -zxvf - --strip-components 1 "${VERSION_BASE}/evm"
       - run:
           name: Benchmark evm
-          command: ./evm run --code '60016000526001601ff3' --statdump
+          command: ./evm run --codefile testdata/simple.bytecode --statdump
 workflows:
   version: 2
   test-deploy:
