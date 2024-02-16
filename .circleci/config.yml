@@ -24,11 +24,36 @@ jobs:
       - attach_workspace:
           at: ./
       - run:
-          name: Run unit tests
+          name: Benchmark eth-zvm
           command: nix develop --command zig build run -Doptimize=ReleaseFast
+  benchmark_evm:
+    docker:
+      - image: cimg/base:2024.01
+    environment:
+      GETH_VERSION: 1.13.12-02eb36af
+    steps:
+      - run:
+          name: Enable Nix flakes
+          command: echo 'experimental-features = nix-command flakes' >> /etc/nix/nix.conf
+      - checkout
+      - attach_workspace:
+          at: ./
+      - run:
+          name: Benchmark eth-zvm
+          command: nix develop --command zig build run -Doptimize=ReleaseFast
+      - run:
+          name: Download official evm implementation
+          command: |
+            VERSION_BASE="geth-alltools-linux-amd64-${GETH_VERSION}"
+            curl --location "https://gethstore.blob.core.windows.net/builds/${VERSION_BASE}.tar.gz" \
+              | tar -zxvf - --strip-components 1 "${VERSION_BASE}/evm"
+      - run:
+          name: Benchmark evm
+          command: ./evm run --code '60016000526001601ff3' --statdump
 workflows:
   version: 2
   test-deploy:
     jobs:
       - run_unit_tests
       - benchmark
+      - benchmark_evm
