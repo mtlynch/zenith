@@ -32,15 +32,9 @@ jobs:
     environment:
       GETH_VERSION: 1.13.12-02eb36af
     steps:
-      - run:
-          name: Enable Nix flakes
-          command: echo 'experimental-features = nix-command flakes' >> /etc/nix/nix.conf
       - checkout
       - attach_workspace:
           at: ./
-      - run:
-          name: Benchmark eth-zvm
-          command: nix develop --command zig build run -Doptimize=ReleaseFast
       - run:
           name: Download official evm implementation
           command: |
