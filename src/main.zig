@@ -32,7 +32,9 @@ const VM = struct {
     }
 
     pub fn run(self: *VM, reader: anytype) !void {
-        while (try self.nextInstruction(reader)) {}
+        while (try self.nextInstruction(reader)) {
+            self.printVerbose("---\n", .{});
+        }
     }
 
     pub fn nextInstruction(self: *VM, reader: anytype) !bool {
@@ -46,21 +48,23 @@ const VM = struct {
         };
         switch (op) {
             OpCode.PUSH1 => {
-                self.printVerbose("Handle {s}\n", .{@tagName(op)});
                 const b = try reader.readByte();
-                self.printVerbose("Pushed {d} onto stack\n", .{b});
+                self.printVerbose("{s} 0x{x:0>2}\n", .{ @tagName(op), b });
                 try self.stack.append(b);
+                self.printVerbose("  Stack: push 0x{x:0>2}\n", .{b});
                 self.gasConsumed += 3;
                 return true;
             },
             OpCode.MSTORE => {
                 const offset = self.stack.pop();
+                self.printVerbose("  Stack: pop 0x{x:0>2}\n", .{offset});
                 const value = self.stack.pop();
-                self.printVerbose("Handle {s} offset={d}, value={d}\n", .{ @tagName(op), offset, value });
+                self.printVerbose("  Stack: pop 0x{x:0>2}\n", .{value});
+                self.printVerbose("{s} offset=0x{x:0>2}, value=0x{x:0>2}\n", .{ @tagName(op), offset, value });
                 if (offset != 0) {
                     return VMError.NotImplemented;
                 }
-                self.printVerbose("Set memory to {d}\n", .{value});
+                self.printVerbose("  Memory: 0x{x:0>32}\n", .{value});
 
                 const oldState = ((self.memory.items.len << 2) / 512) + (3 * self.memory.items.len);
                 try self.memory.append(value);
@@ -71,8 +75,10 @@ const VM = struct {
             },
             OpCode.RETURN => {
                 const offset = self.stack.pop();
+                self.printVerbose("  Stack: pop 0x{x:0>2}\n", .{offset});
                 const size = self.stack.pop();
-                self.printVerbose("Handle {s} offset={d}, size={d}\n", .{ @tagName(op), offset, size });
+                self.printVerbose("  Stack: pop 0x{x:0>2}\n", .{size});
+                self.printVerbose("{s} offset=0x{x:0>2}, size=0x{x:0>2}\n", .{ @tagName(op), offset, size });
                 if (size != 1) {
                     return VMError.NotImplemented;
                 }
