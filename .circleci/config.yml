@@ -28,7 +28,7 @@ jobs:
           command: nix develop --command bash -c 'xxd -r -p < testdata/return-single-byte.bytecode | zig build run -Doptimize=ReleaseFast' | tee /tmp/output
       - run:
           name: Extract runtime from output
-          command: cat /tmp/output | grep -oP 'execution time:\s+\K\d+\.\d+µs' > eth-zvm.benchmark
+          command: cat /tmp/output | grep -oP 'execution time:\s+\K\d+\.\d+' | tee eth-zvm.benchmark
       - persist_to_workspace:
           root: ./
           paths:
@@ -53,7 +53,7 @@ jobs:
           command: ./evm run --codefile testdata/return-single-byte.bytecode --statdump | tee /tmp/output
       - run:
           name: Extract runtime from output
-          command: cat /tmp/output | grep -oP 'execution time:\s+\K\d+\.\d+µs' > evm.benchmark
+          command: cat /tmp/output | grep -oP 'execution time:\s+\K\d+\.\d+' | tee evm.benchmark
       - persist_to_workspace:
           root: ./
           paths:
