@@ -28,11 +28,11 @@ jobs:
           command: nix develop --command bash -c 'xxd -r -p < testdata/return-single-byte.bytecode | zig build run -Doptimize=ReleaseFast' | tee /tmp/output
       - run:
           name: Extract runtime from output
-          command: cat /tmp/output | grep -oP 'execution time:\s+\K\d+\.\d+µs' > benchmarks/eth-zvm.benchmark
+          command: cat /tmp/output | grep -oP 'execution time:\s+\K\d+\.\d+µs' > eth-zvm.benchmark
       - persist_to_workspace:
           root: ./
           paths:
-            - ./benchmarks/eth-zvm.benchmark
+            - ./eth-zvm.benchmark
   benchmark_evm:
     docker:
       - image: cimg/base:2024.01
@@ -53,11 +53,11 @@ jobs:
           command: ./evm run --codefile testdata/return-single-byte.bytecode --statdump | tee /tmp/output
       - run:
           name: Extract runtime from output
-          command: cat /tmp/output | grep -oP 'execution time:\s+\K\d+\.\d+µs' > benchmarks/evm.benchmark
+          command: cat /tmp/output | grep -oP 'execution time:\s+\K\d+\.\d+µs' > evm.benchmark
       - persist_to_workspace:
           root: ./
           paths:
-            - ./benchmarks/evm.benchmark
+            - ./evm.benchmark
       - run:
           name: Disassemble bytecode
           command: ./evm disasm testdata/return-single-byte.bytecode

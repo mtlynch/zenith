@@ -1,4 +1,5 @@
-benchmarks/
+*.benchmark
+
 bin/
 zig-cache/
 zig-out/
