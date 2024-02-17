@@ -13,10 +13,19 @@ const VMError = error{
     NotImplemented,
 };
 
+const VMReturnValue = struct {
+    value: [32]u8,
+    size: u8 = undefined,
+
+    pub fn slice(self: VMReturnValue) []u8 {
+        return [self.size]self.value;
+    }
+};
+
 const VM = struct {
     stack: std.ArrayList(u8) = undefined,
     memory: std.ArrayList(u32) = undefined,
-    returnValue: u8 = undefined,
+    returnValue: VMReturnValue = undefined,
     verbose: bool = false,
     gasConsumed: u64 = 0,
 
@@ -153,7 +162,40 @@ test "return single-byte value" {
     try evm.run(&reader);
 
     try std.testing.expectEqual(@as(u64, 18), evm.gasConsumed);
-    try std.testing.expectEqual(@as(u32, 0x01), evm.returnValue);
+    try std.testing.expectEqualSlices(u8, &[_]u8{0x01}, evm.returnValue.slice());
+    try std.testing.expectEqualSlices(u8, &[_]u8{}, evm.stack.items);
+    try std.testing.expectEqualSlices(u32, &[_]u32{1}, evm.memory.items);
+}
+
+test "return 32-byte value" {
+    const allocator = std.testing.allocator;
+
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(OpCode.PUSH1), 0x01,
+        @intFromEnum(OpCode.PUSH1), 0x00,
+        @intFromEnum(OpCode.MSTORE),
+        @intFromEnum(OpCode.PUSH1), 0x20,
+        @intFromEnum(OpCode.PUSH1), 0x00,
+        @intFromEnum(OpCode.RETURN),
+    };
+    // zig fmt: on
+    var stream = std.io.fixedBufferStream(&bytecode);
+    var reader = stream.reader();
+
+    var evm = VM{};
+    evm.init(allocator, false);
+    defer evm.deinit();
+
+    try evm.run(&reader);
+
+    try std.testing.expectEqual(@as(u64, 18), evm.gasConsumed);
+    try std.testing.expectEqualSlices(u8, &[_]u8{
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+    }, evm.returnValue.slice());
     try std.testing.expectEqualSlices(u8, &[_]u8{}, evm.stack.items);
     try std.testing.expectEqualSlices(u32, &[_]u32{1}, evm.memory.items);
 }
