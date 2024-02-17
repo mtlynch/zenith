@@ -1,3 +1,4 @@
+benchmarks/
 bin/
 zig-cache/
 zig-out/
