@@ -123,9 +123,11 @@ pub fn main() !void {
     try evm.run(&reader);
     const end = timer.read();
     const elapsed_micros = @as(f64, @floatFromInt(end - start)) / time.ns_per_us;
-    std.debug.print("EVM gas used:    {}\n", .{evm.gasConsumed});
-    std.debug.print("execution time:  {d:.3}µs\n", .{elapsed_micros});
-    std.debug.print("0x{x:0>2}\n", .{evm.returnValue});
+
+    const output = std.io.getStdOut().writer();
+    try output.print("EVM gas used:    {}\n", .{evm.gasConsumed});
+    try output.print("execution time:  {d:.3}µs\n", .{elapsed_micros});
+    try output.print("0x{x:0>2}\n", .{evm.returnValue});
 }
 
 test "return single-byte value" {
