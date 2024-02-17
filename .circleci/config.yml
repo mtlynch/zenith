@@ -36,7 +36,7 @@ jobs:
       - persist_to_workspace:
           root: ./
           paths:
-            - ./eth-zvm.benchmark
+            - ./benchmarks/eth-zvm.benchmark
   benchmark_evm:
     docker:
       - image: cimg/base:2024.01
@@ -64,7 +64,7 @@ jobs:
       - persist_to_workspace:
           root: ./
           paths:
-            - ./evm.benchmark
+            - ./benchmarks/evm.benchmark
       - run:
           name: Disassemble bytecode
           command: ./evm disasm testdata/return-single-byte.bytecode
