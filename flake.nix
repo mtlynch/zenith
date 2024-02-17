@@ -16,10 +16,12 @@
     {
       devShells.default = zig_dep.mkShell {
         packages = [
+          zig_dep.xxd
           zig_dep.zig
         ];
 
         shellHook = ''
+          xxd --version
           echo "zig" "$(zig version)"
         '';
       };
