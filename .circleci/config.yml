@@ -71,7 +71,9 @@ jobs:
       - store_artifacts:
           path: benchmarks.html
       - store_artifacts:
-          path: "*.benchmark"
+          path: eth-zvm.benchmark
+      - store_artifacts:
+          path: evm.benchmark
 workflows:
   version: 2
   test-deploy:
