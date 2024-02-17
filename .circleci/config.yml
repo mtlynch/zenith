@@ -50,10 +50,10 @@ jobs:
               | tar -zxvf - --strip-components 1 "${VERSION_BASE}/evm"
       - run:
           name: Benchmark evm
-          command: ./evm run --codefile testdata/return-single-byte.bytecode --statdump | tee /tmp/output
+          command: ./evm run --codefile testdata/return-single-byte.bytecode --statdump |& tee /tmp/output
       - run:
           name: Extract runtime from output
-          command: cat /tmp/output | grep -oP 'execution time:\s+\K\d+\.\d+' |& tee evm.benchmark
+          command: cat /tmp/output | grep -oP 'execution time:\s+\K\d+\.\d+' | tee evm.benchmark
       - persist_to_workspace:
           root: ./
           paths:
@@ -61,6 +61,17 @@ jobs:
       - run:
           name: Disassemble bytecode
           command: ./evm disasm testdata/return-single-byte.bytecode
+  make_benchmark_graph:
+    docker:
+      - image: cimg/base:2024.01
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ./
+      - store_artifacts:
+          path: benchmarks.html
+      - store_artifacts:
+          path: *.benchmark
 workflows:
   version: 2
   test-deploy:
@@ -68,3 +79,7 @@ workflows:
       - run_unit_tests
       - benchmark
       - benchmark_evm
+      - make_benchmark_graph:
+          requires:
+            - benchmark
+            - benchmark_evm
