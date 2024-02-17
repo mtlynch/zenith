@@ -128,7 +128,7 @@ pub fn main() !void {
     std.debug.print("0x{x:0>2}\n", .{evm.returnValue});
 }
 
-test "simple test" {
+test "return single-byte value" {
     const allocator = std.testing.allocator;
 
     // zig fmt: off
