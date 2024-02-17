@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>EVM Benchmarks</title>
+  <meta charset="utf-8" />
+</head>
+
+<body>
+
+  <main>
+    <h1>Benchmarks</h1>
+    <h2>Return Single Byte</h2>
+    <div>
+      <canvas id="return-single-byte"></canvas>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+      const ctx = document.getElementById('return-single-byte');
+
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['eth-zvm', 'evm (Go)'],
+          datasets: [{
+            label: 'Runtime (µs)',
+            data: [37.859, 55.439],
+
+    backgroundColor: [
+      'rgba(75, 192, 192, 0.2)',
+      'rgba(54, 162, 235, 0.2)'
+    ],
+
+    borderColor: [
+      'rgb(75, 192, 192)',
+      'rgb(54, 162, 235)'
+    ],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
+    </script>
+
+  </main>
+
+</body>
+</html>
