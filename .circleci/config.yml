@@ -26,7 +26,7 @@ jobs:
       - run:
           name: Benchmark eth-zvm
           command: |
-            for i in $(seq 1 10);
+            for i in $(seq 1 30);
             do
               nix develop --command bash -c 'xxd -r -p < testdata/return-single-byte.bytecode \
                 | zig build run -Doptimize=ReleaseFast' \
@@ -55,7 +55,7 @@ jobs:
       - run:
           name: Benchmark evm
           command: |
-            for i in $(seq 1 10);
+            for i in $(seq 1 30);
             do
               ./evm run --codefile testdata/return-single-byte.bytecode --statdump \
                 |& grep -oP 'execution time:\s+\K\d+\.\d+' \
