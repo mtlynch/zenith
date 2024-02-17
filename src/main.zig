@@ -88,16 +88,31 @@ const VM = struct {
                 const size = self.stack.pop();
                 self.printVerbose("  Stack: pop 0x{x:0>2}\n", .{size});
                 self.printVerbose("{s} offset=0x{x:0>2}, size=0x{x:0>2}\n", .{ @tagName(op), offset, size });
-                if (size != 1) {
-                    return VMError.NotImplemented;
-                }
-                if (offset != 31) {
-                    return VMError.NotImplemented;
-                }
-                const val = self.memory.getLast();
-                const shrunk: u8 = @as(u8, @truncate(val));
-                self.returnValue = shrunk;
-                self.printVerbose("RETURN {d}\n", .{shrunk});
+
+                // TODO: Handle case where return value spans multiple words.
+                const mWord = self.memory.getLast();
+
+                const mBytes = [_]u8{
+                    mWord >> 15,
+                    mWord >> 14,
+                    mWord >> 13,
+                    mWord >> 12,
+                    mWord >> 11,
+                    mWord >> 10,
+                    mWord >> 9,
+                    mWord >> 8,
+                    mWord >> 7,
+                    mWord >> 6,
+                    mWord >> 5,
+                    mWord >> 4,
+                    mWord >> 3,
+                    mWord >> 2,
+                    mWord >> 1,
+                    mWord >> 0,
+                };
+
+                //self.returnValue = shrunk;
+                //self.printVerbose("RETURN {d}\n", .{shrunk});
                 return true;
             },
             else => {
