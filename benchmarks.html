@@ -17,15 +17,17 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
-      const ctx = document.getElementById('return-single-byte');
+      const ethZvmPromise = fetch("eth-zvm.benchmark").then(response => response.text()).then(data => parseFloat(data));
+      const evmPromise = fetch("evm.benchmark").then(response => response.text()).then(data => parseFloat(data));
 
-      new Chart(ctx, {
+      Promise.all([ethZvmPromise, evmPromise, ]).then((values) => {
+        new Chart(ctx, {
         type: 'bar',
         data: {
           labels: ['eth-zvm', 'evm (Go)'],
           datasets: [{
             label: 'Runtime (µs)',
-            data: [37.859, 55.439],
+            data: values,
 
     backgroundColor: [
       'rgba(75, 192, 192, 0.2)',
@@ -47,6 +49,10 @@
           }
         }
       });
+      });
+      const ctx = document.getElementById('return-single-byte');
+
+
     </script>
 
   </main>
