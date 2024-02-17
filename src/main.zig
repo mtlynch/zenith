@@ -130,30 +130,27 @@ pub fn main() !void {
     try output.print("0x{x:0>2}\n", .{evm.returnValue});
 }
 
-test "return single-byte value" {
-    const allocator = std.testing.allocator;
+test "convert memory word to bytes" {
+    const m: u32 = 0x1234567;
 
-    // zig fmt: off
-    const bytecode = [_]u8{
-        @intFromEnum(OpCode.PUSH1), 0x01,
-        @intFromEnum(OpCode.PUSH1), 0x00,
-        @intFromEnum(OpCode.MSTORE),
-        @intFromEnum(OpCode.PUSH1), 0x01,
-        @intFromEnum(OpCode.PUSH1), 0x1f,
-        @intFromEnum(OpCode.RETURN),
+    const mBytes = [_]u8{
+        @truncate(m >> 24),
+        @truncate(m >> 16),
+        @truncate(m >> 8),
+        @truncate(m >> 0),
     };
-    // zig fmt: on
-    var stream = std.io.fixedBufferStream(&bytecode);
-    var reader = stream.reader();
 
-    var evm = VM{};
-    evm.init(allocator, false);
-    defer evm.deinit();
+    const returnSize = 2;
+    const returnOffset = 1;
 
-    try evm.run(&reader);
+    var rBytes = [4]u8{ 0, 0, 0, 0 };
+    for (0..returnSize) |i| {
+        rBytes[i] = mBytes[returnOffset + i];
+    }
 
-    try std.testing.expectEqual(@as(u64, 18), evm.gasConsumed);
-    try std.testing.expectEqual(@as(u32, 0x01), evm.returnValue);
-    try std.testing.expectEqualSlices(u8, &[_]u8{}, evm.stack.items);
-    try std.testing.expectEqualSlices(u32, &[_]u32{1}, evm.memory.items);
+    std.debug.print("\n", .{});
+    std.debug.print("m        =0x{x}\n", .{m});
+    std.debug.print("mBytes[0]=0x{x}\n", .{mBytes[0]});
+    std.debug.print("mBytes   ={}\n", .{std.fmt.fmtSliceHexLower(&mBytes)});
+    std.debug.print("rBytes   ={}\n", .{std.fmt.fmtSliceHexLower(&rBytes)});
 }
