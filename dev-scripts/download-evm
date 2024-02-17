@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+# Exit on first failure.
+set -e
+
+# Exit on unset variable.
+set -u
+
+# Echo commands before executing them, by default to stderr.
+set -x
+
+# Fail when piped commands fail.
+set -o pipefail
+
+GETH_VERSION='1.13.12-02eb36af'
+VERSION_BASE="geth-alltools-linux-amd64-${GETH_VERSION}"
+
+curl --location "https://gethstore.blob.core.windows.net/builds/${VERSION_BASE}.tar.gz" \
+  | tar -zxvf - --strip-components 1 "${VERSION_BASE}/evm"

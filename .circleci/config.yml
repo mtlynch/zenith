@@ -40,18 +40,13 @@ jobs:
   benchmark_evm:
     docker:
       - image: cimg/base:2024.01
-    environment:
-      GETH_VERSION: 1.13.12-02eb36af
     steps:
       - checkout
       - attach_workspace:
           at: ./
       - run:
           name: Download official evm implementation
-          command: |
-            VERSION_BASE="geth-alltools-linux-amd64-${GETH_VERSION}"
-            curl --location "https://gethstore.blob.core.windows.net/builds/${VERSION_BASE}.tar.gz" \
-              | tar -zxvf - --strip-components 1 "${VERSION_BASE}/evm"
+          command: ./dev-scripts/download-evm
       - run:
           name: Benchmark evm
           command: |
