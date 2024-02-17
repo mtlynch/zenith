@@ -17,8 +17,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
-      const ethZvmPromise = fetch("eth-zvm.benchmark").then(response => response.text()).then(data => parseFloat(data));
-      const evmPromise = fetch("evm.benchmark").then(response => response.text()).then(data => parseFloat(data));
+      const average = array => array.reduce((a, b) => a + b) / array.length;
+      const ethZvmPromise = fetch("eth-zvm.benchmark").then(response => response.text()).then(data =>  data.split("\n").filter(x => x).map(x => parseFloat(x)));
+      const evmPromise = fetch("evm.benchmark").then(response => response.text()).then(data => data.split("\n").filter(x => x).map(x => parseFloat(x)));
 
       Promise.all([ethZvmPromise, evmPromise, ]).then((values) => {
         new Chart(ctx, {
@@ -27,7 +28,7 @@
           labels: ['eth-zvm', 'evm (Go)'],
           datasets: [{
             label: 'Runtime (µs)',
-            data: values,
+            data: values.map(x => average(x)),
 
     backgroundColor: [
       'rgba(75, 192, 192, 0.2)',

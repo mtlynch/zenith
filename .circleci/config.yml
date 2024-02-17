@@ -25,10 +25,14 @@ jobs:
           at: ./
       - run:
           name: Benchmark eth-zvm
-          command: nix develop --command bash -c 'xxd -r -p < testdata/return-single-byte.bytecode | zig build run -Doptimize=ReleaseFast' | tee /tmp/output
-      - run:
-          name: Extract runtime from output
-          command: cat /tmp/output | grep -oP 'execution time:\s+\K\d+\.\d+' | tee eth-zvm.benchmark
+          command: |
+            for i in $(seq 1 10);
+            do
+              nix develop --command bash -c 'xxd -r -p < testdata/return-single-byte.bytecode \
+                | zig build run -Doptimize=ReleaseFast' \
+                | grep -oP 'execution time:\s+\K\d+\.\d+' \
+                | tee --append eth-zvm.benchmark
+            done
       - persist_to_workspace:
           root: ./
           paths:
@@ -50,10 +54,13 @@ jobs:
               | tar -zxvf - --strip-components 1 "${VERSION_BASE}/evm"
       - run:
           name: Benchmark evm
-          command: ./evm run --codefile testdata/return-single-byte.bytecode --statdump |& tee /tmp/output
-      - run:
-          name: Extract runtime from output
-          command: cat /tmp/output | grep -oP 'execution time:\s+\K\d+\.\d+' | tee evm.benchmark
+          command: |
+            for i in $(seq 1 10);
+            do
+              ./evm run --codefile testdata/return-single-byte.bytecode --statdump \
+                |& grep -oP 'execution time:\s+\K\d+\.\d+' \
+                | tee --append evm.benchmark
+            done
       - persist_to_workspace:
           root: ./
           paths:
