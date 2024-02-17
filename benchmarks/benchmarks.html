@@ -3,13 +3,20 @@
   <head>
     <title>EVM Benchmarks</title>
     <meta charset="utf-8" />
+    <style>
+      .chart-container {
+        max-width: 800px;
+        margin-left: 1rem;
+        margin-right: 1rem;
+      }
+    </style>
   </head>
 
   <body>
     <main>
       <h1>Benchmarks</h1>
       <h2>Return Single Byte</h2>
-      <div>
+      <div class="chart-container">
         <canvas id="return-single-byte"></canvas>
       </div>
 
@@ -38,6 +45,10 @@
                 {
                   label: "Runtime (µs)",
                   data: values.map((x) => average(x)),
+                  errorBars: [
+                    0.1,
+                    0.2
+                  ],
 
                   backgroundColor: [
                     "rgba(75, 192, 192, 0.2)",
@@ -50,8 +61,17 @@
               ],
             },
             options: {
+              plugins: {
+                  legend: {
+                    display: false
+                },
+              },
               scales: {
                 y: {
+                  title: {
+                    display: true,
+                    text: "Runtime (µs)"
+                  },
                   beginAtZero: true,
                 },
               },
