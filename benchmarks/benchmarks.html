@@ -22,7 +22,17 @@
 
       <script src="third-party/Chart.js/4.4.1/chart.umd.js"></script>
       <script>
-        const average = (array) => array.reduce((a, b) => a + b) / array.length;
+        function median(measurements) {
+            const sorted = Array.from(measurements).sort((a, b) => a - b);
+            const middle = Math.floor(sorted.length / 2);
+
+            if (sorted.length % 2 === 0) {
+                return (sorted[middle - 1] + sorted[middle]) / 2;
+            }
+
+            return sorted[middle];
+        }
+
         function getBenchmarks(filename) {
           return fetch(filename)
             .then((response) => response.text())
@@ -44,11 +54,7 @@
               datasets: [
                 {
                   label: "Runtime (µs)",
-                  data: values.map((x) => average(x)),
-                  errorBars: [
-                    0.1,
-                    0.2
-                  ],
+                  data: values.map((x) => median(x)),
 
                   backgroundColor: [
                     "rgba(75, 192, 192, 0.2)",
