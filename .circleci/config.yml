@@ -25,7 +25,18 @@ jobs:
           at: ./
       - run:
           name: Benchmark eth-zvm
-          command: nix develop --command bash -c 'xxd -r -p < testdata/return-single-byte.bytecode | zig build run -Doptimize=ReleaseFast'
+          command: |
+            for i in $(seq 1 30);
+            do
+              nix develop --command bash -c 'xxd -r -p < testdata/return-single-byte.bytecode \
+                | zig build run -Doptimize=ReleaseFast' \
+                | grep -oP 'execution time:\s+\K\d+\.\d+' \
+                | tee --append benchmarks/eth-zvm.benchmark
+            done
+      - persist_to_workspace:
+          root: ./
+          paths:
+            - ./benchmarks/eth-zvm.benchmark
   benchmark_evm:
     docker:
       - image: cimg/base:2024.01
@@ -43,10 +54,29 @@ jobs:
               | tar -zxvf - --strip-components 1 "${VERSION_BASE}/evm"
       - run:
           name: Benchmark evm
-          command: ./evm run --codefile testdata/return-single-byte.bytecode --statdump
+          command: |
+            for i in $(seq 1 30);
+            do
+              ./evm run --codefile testdata/return-single-byte.bytecode --statdump \
+                |& grep -oP 'execution time:\s+\K\d+\.\d+' \
+                | tee --append benchmarks/evm.benchmark
+            done
+      - persist_to_workspace:
+          root: ./
+          paths:
+            - ./benchmarks/evm.benchmark
       - run:
           name: Disassemble bytecode
           command: ./evm disasm testdata/return-single-byte.bytecode
+  make_benchmark_graph:
+    docker:
+      - image: cimg/base:2024.01
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ./
+      - store_artifacts:
+          path: benchmarks/
 workflows:
   version: 2
   test-deploy:
@@ -54,3 +84,7 @@ workflows:
       - run_unit_tests
       - benchmark
       - benchmark_evm
+      - make_benchmark_graph:
+          requires:
+            - benchmark
+            - benchmark_evm

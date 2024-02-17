@@ -21,7 +21,7 @@
         ];
 
         shellHook = ''
-          xxd --version
+          xxd --version 2>&1
           echo "zig" "$(zig version)"
         '';
       };

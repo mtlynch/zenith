@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>EVM Benchmarks</title>
+    <meta charset="utf-8" />
+    <style>
+      .chart-container {
+        max-width: 800px;
+        margin-left: 1rem;
+        margin-right: 1rem;
+      }
+    </style>
+  </head>
+
+  <body>
+    <main>
+      <h1>Benchmarks</h1>
+      <h2>Return Single Byte</h2>
+      <div class="chart-container">
+        <canvas id="return-single-byte"></canvas>
+      </div>
+
+      <script src="third-party/Chart.js/4.4.1/chart.umd.js"></script>
+      <script>
+        const average = (array) => array.reduce((a, b) => a + b) / array.length;
+        function getBenchmarks(filename) {
+          return fetch(filename)
+            .then((response) => response.text())
+            .then((data) =>
+              data
+                .split("\n")
+                .filter((x) => x)
+                .map((x) => parseFloat(x)),
+            );
+        }
+        const ethZvmPromise = getBenchmarks("eth-zvm.benchmark");
+        const evmPromise = getBenchmarks("evm.benchmark");
+
+        Promise.all([ethZvmPromise, evmPromise]).then((values) => {
+          new Chart(ctx, {
+            type: "bar",
+            data: {
+              labels: ["eth-zvm (Zig)", "evm (Go)"],
+              datasets: [
+                {
+                  label: "Runtime (µs)",
+                  data: values.map((x) => average(x)),
+                  errorBars: [
+                    0.1,
+                    0.2
+                  ],
+
+                  backgroundColor: [
+                    "rgba(75, 192, 192, 0.2)",
+                    "rgba(54, 162, 235, 0.2)",
+                  ],
+
+                  borderColor: ["rgb(75, 192, 192)", "rgb(54, 162, 235)"],
+                  borderWidth: 1,
+                },
+              ],
+            },
+            options: {
+              plugins: {
+                  legend: {
+                    display: false
+                },
+              },
+              scales: {
+                y: {
+                  title: {
+                    display: true,
+                    text: "Runtime (µs)"
+                  },
+                  beginAtZero: true,
+                },
+              },
+            },
+          });
+        });
+        const ctx = document.getElementById("return-single-byte");
+      </script>
+    </main>
+  </body>
+</html>
