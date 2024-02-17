@@ -53,7 +53,7 @@ jobs:
           command: ./evm run --codefile testdata/return-single-byte.bytecode --statdump | tee /tmp/output
       - run:
           name: Extract runtime from output
-          command: cat /tmp/output | grep -oP 'execution time:\s+\K\d+\.\d+' | tee evm.benchmark
+          command: cat /tmp/output | grep -oP 'execution time:\s+\K\d+\.\d+' |& tee evm.benchmark
       - persist_to_workspace:
           root: ./
           paths:
