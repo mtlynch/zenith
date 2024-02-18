@@ -11,18 +11,19 @@ const OpCode = enum(u8) {
 
 const VMError = error{
     NotImplemented,
+    MemoryReferenceTooLarge,
 };
 
 const VM = struct {
     allocator: std.mem.Allocator = undefined,
-    stack: std.ArrayList(u8) = undefined,
+    stack: std.ArrayList(u256) = undefined,
     memory: std.ArrayList(u256) = undefined,
     returnValue: []u8 = undefined,
     verbose: bool = false,
     gasConsumed: u64 = 0,
 
     pub fn init(self: *VM, allocator: std.mem.Allocator, verbose: bool) void {
-        self.stack = std.ArrayList(u8).init(allocator);
+        self.stack = std.ArrayList(u256).init(allocator);
         self.memory = std.ArrayList(u256).init(allocator);
         self.allocator = allocator;
         self.verbose = verbose;
@@ -80,11 +81,14 @@ const VM = struct {
                 return true;
             },
             OpCode.RETURN => {
-                const offset = self.stack.pop();
-                self.printVerbose("  Stack: pop 0x{x:0>2}\n", .{offset});
-                const size = self.stack.pop();
-                self.printVerbose("  Stack: pop 0x{x:0>2}\n", .{size});
-                self.printVerbose("{s} offset={d}, size={d}\n", .{ @tagName(op), offset, size });
+                const offset256 = self.stack.pop();
+                self.printVerbose("  Stack: pop 0x{x:0>2}\n", .{offset256});
+                const size256 = self.stack.pop();
+                self.printVerbose("  Stack: pop 0x{x:0>2}\n", .{size256});
+                self.printVerbose("{s} offset={d}, size={d}\n", .{ @tagName(op), offset256, size256 });
+
+                const offset = std.math.cast(u32, offset256) orelse return VMError.MemoryReferenceTooLarge;
+                const size = std.math.cast(u32, size256) orelse return VMError.MemoryReferenceTooLarge;
 
                 self.returnValue = try readMemory(self.allocator, self.memory.items, offset, size);
                 self.printVerbose("  Return value: 0x{}\n", .{std.fmt.fmtSliceHexLower(self.returnValue)});
@@ -108,7 +112,7 @@ pub fn toBigEndian(x: u256) u256 {
     return std.mem.nativeTo(u256, x, std.builtin.Endian.Big);
 }
 
-pub fn readMemory(allocator: std.mem.Allocator, memory: []const u256, offset: u8, size: u8) ![]u8 {
+pub fn readMemory(allocator: std.mem.Allocator, memory: []const u256, offset: u32, size: u32) ![]u8 {
     // Make a copy of memory in big-endian order.
     // TODO: We can optimize this to only copy the bytes that we want to read.
     var memoryCopy = try std.ArrayList(u256).initCapacity(allocator, memory.len);
@@ -177,7 +181,7 @@ test "return single-byte value" {
 
     try std.testing.expectEqual(@as(u64, 18), evm.gasConsumed);
     try std.testing.expectEqualSlices(u8, &[_]u8{0x01}, evm.returnValue);
-    try std.testing.expectEqualSlices(u8, &[_]u8{}, evm.stack.items);
+    try std.testing.expectEqualSlices(u256, &[_]u256{}, evm.stack.items);
     try std.testing.expectEqualSlices(u256, &[_]u256{0x01}, evm.memory.items);
 }
 
@@ -210,7 +214,7 @@ test "return 32-byte value" {
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
     }, evm.returnValue);
-    try std.testing.expectEqualSlices(u8, &[_]u8{}, evm.stack.items);
+    try std.testing.expectEqualSlices(u256, &[_]u256{}, evm.stack.items);
     try std.testing.expectEqualSlices(u256, &[_]u256{0x01}, evm.memory.items);
 }
 
