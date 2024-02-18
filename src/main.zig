@@ -59,7 +59,7 @@ const VM = struct {
                 const b = try reader.readByte();
                 self.printVerbose("{s} 0x{x:0>2}\n", .{ @tagName(op), b });
                 try self.stack.append(b);
-                self.printVerbose("  Stack: push 0x{x:0>2}\n", .{b});
+                self.printVerbose("  Stack: push 0x{x}\n", .{b});
                 self.gasConsumed += 3;
                 return true;
             },
@@ -67,16 +67,16 @@ const VM = struct {
                 const b = try reader.readIntBig(u256);
                 self.printVerbose("{s} 0x{x:0>32}\n", .{ @tagName(op), b });
                 try self.stack.append(b);
-                self.printVerbose("  Stack: push 0x{x:0>2}\n", .{b});
+                self.printVerbose("  Stack: push 0x{x}\n", .{b});
                 self.gasConsumed += 3;
                 return true;
             },
             OpCode.MSTORE => {
                 const offset = self.stack.pop();
-                self.printVerbose("  Stack: pop 0x{x:0>2}\n", .{offset});
+                self.printVerbose("  Stack: pop 0x{x}\n", .{offset});
                 const value = self.stack.pop();
-                self.printVerbose("  Stack: pop 0x{x:0>2}\n", .{value});
-                self.printVerbose("{s} offset={d}, value={d}\n", .{ @tagName(op), offset, value });
+                self.printVerbose("  Stack: pop 0x{x}\n", .{value});
+                self.printVerbose("{s} offset={d}, value=0x{x}\n", .{ @tagName(op), offset, value });
                 if (offset != 0) {
                     return VMError.NotImplemented;
                 }
@@ -91,9 +91,9 @@ const VM = struct {
             },
             OpCode.RETURN => {
                 const offset256 = self.stack.pop();
-                self.printVerbose("  Stack: pop 0x{x:0>2}\n", .{offset256});
+                self.printVerbose("  Stack: pop 0x{x}\n", .{offset256});
                 const size256 = self.stack.pop();
-                self.printVerbose("  Stack: pop 0x{x:0>2}\n", .{size256});
+                self.printVerbose("  Stack: pop 0x{x}\n", .{size256});
                 self.printVerbose("{s} offset={d}, size={d}\n", .{ @tagName(op), offset256, size256 });
 
                 const offset = std.math.cast(u32, offset256) orelse return VMError.MemoryReferenceTooLarge;
