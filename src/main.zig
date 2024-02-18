@@ -38,7 +38,10 @@ const VM = struct {
     }
 
     pub fn nextInstruction(self: *VM, reader: anytype) !bool {
-        const op: OpCode = reader.readEnum(OpCode, std.builtin.Endian.Little) catch |err| switch (err) {
+        // This doesn't really matter, since the opcode is a single byte.
+        const byteOrder = std.builtin.Endian.Big;
+
+        const op: OpCode = reader.readEnum(OpCode, byteOrder) catch |err| switch (err) {
             error.EndOfStream => {
                 return false;
             },
@@ -105,6 +108,26 @@ const VM = struct {
     }
 };
 
+pub fn toBigEndian(x: u32) u32 {
+    return std.mem.nativeTo(u32, x, std.builtin.Endian.Big);
+}
+
+pub fn readMemory(allocator: std.mem.Allocator, memory: []u32, offset: u8, size: u8) []u8 {
+    const memoryCopy = std.ArrayList(u32).initCapacity(allocator, memory.len);
+    for (0..memory.len) |i| {
+        memoryCopy.items[i] = toBigEndian(memory[i]);
+    }
+
+    const mBytes = std.mem.sliceAsBytes(&memoryCopy.items);
+
+    const rBytes = std.ArrayList(u8).initCapacity(allocator, size);
+    for (0..size) |i| {
+        rBytes.items[i] = mBytes[offset + i];
+    }
+
+    return rBytes.asOwnedSlice();
+}
+
 pub fn main() !void {
     const verboseMode = ((std.os.argv.len > 1) and std.mem.eql(u8, std.mem.span(std.os.argv[1]), "-v"));
 
@@ -131,14 +154,12 @@ pub fn main() !void {
 }
 
 test "convert memory word to bytes" {
-    const m: u32 = 0x1234567;
+    const allocator = std.testing.allocator;
 
-    const mBytes = [_]u8{
-        @truncate(m >> 24),
-        @truncate(m >> 16),
-        @truncate(m >> 8),
-        @truncate(m >> 0),
-    };
+    const m = [_]u32{ 0x1234567, 0xabcdef01 };
+    const mBig = [_]u32{ toBigEndian(m[0]), toBigEndian(m[1]) };
+
+    const mBytes = std.mem.sliceAsBytes(&mBig);
 
     const returnSize = 2;
     const returnOffset = 1;
@@ -148,9 +169,13 @@ test "convert memory word to bytes" {
         rBytes[i] = mBytes[returnOffset + i];
     }
 
-    std.debug.print("\n", .{});
-    std.debug.print("m        =0x{x}\n", .{m});
-    std.debug.print("mBytes[0]=0x{x}\n", .{mBytes[0]});
-    std.debug.print("mBytes   ={}\n", .{std.fmt.fmtSliceHexLower(&mBytes)});
-    std.debug.print("rBytes   ={}\n", .{std.fmt.fmtSliceHexLower(&rBytes)});
+    std.debug.print("next line?\n", .{});
+    std.debug.print("m        = 0x{x}\n", .{m});
+    for (0..mBytes.len) |i| {
+        std.debug.print("mBytes[{d}]= 0x{x}\n", .{ i, mBytes[i] });
+    }
+    std.debug.print("mBytes   = {*}\n", .{mBytes});
+    for (0..rBytes.len) |i| {
+        std.debug.print("rBytes[{d}]= 0x{x}\n", .{ i, rBytes[i] });
+    }
 }
