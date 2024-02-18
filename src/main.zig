@@ -4,6 +4,7 @@ const Timer = std.time.Timer;
 
 const OpCode = enum(u8) {
     PUSH1 = 0x60,
+    PUSH32 = 0x7f,
     MSTORE = 0x52,
     RETURN = 0xf3,
     _,
@@ -57,6 +58,14 @@ const VM = struct {
             OpCode.PUSH1 => {
                 const b = try reader.readByte();
                 self.printVerbose("{s} 0x{x:0>2}\n", .{ @tagName(op), b });
+                try self.stack.append(b);
+                self.printVerbose("  Stack: push 0x{x:0>2}\n", .{b});
+                self.gasConsumed += 3;
+                return true;
+            },
+            OpCode.PUSH32 => {
+                const b = try reader.readIntBig(u256);
+                self.printVerbose("{s} 0x{x:0>32}\n", .{ @tagName(op), b });
                 try self.stack.append(b);
                 self.printVerbose("  Stack: push 0x{x:0>2}\n", .{b});
                 self.gasConsumed += 3;
@@ -216,6 +225,34 @@ test "return 32-byte value" {
     }, evm.returnValue);
     try std.testing.expectEqualSlices(u256, &[_]u256{}, evm.stack.items);
     try std.testing.expectEqualSlices(u256, &[_]u256{0x01}, evm.memory.items);
+}
+
+test "use push32 and return a single byte" {
+    const allocator = std.testing.allocator;
+
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(OpCode.PUSH32), 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        @intFromEnum(OpCode.PUSH1), 0x00,
+        @intFromEnum(OpCode.MSTORE),
+        @intFromEnum(OpCode.PUSH1), 0x01,
+        @intFromEnum(OpCode.PUSH1), 0x00,
+        @intFromEnum(OpCode.RETURN),
+    };
+    // zig fmt: on
+    var stream = std.io.fixedBufferStream(&bytecode);
+    var reader = stream.reader();
+
+    var evm = VM{};
+    evm.init(allocator, false);
+    defer evm.deinit();
+
+    try evm.run(&reader);
+
+    try std.testing.expectEqual(@as(u64, 18), evm.gasConsumed);
+    try std.testing.expectEqualSlices(u8, &[_]u8{0x10}, evm.returnValue);
+    try std.testing.expectEqualSlices(u256, &[_]u256{}, evm.stack.items);
+    try std.testing.expectEqualSlices(u256, &[_]u256{0x1000000000000000000000000000000000000000000000000000000000000000}, evm.memory.items);
 }
 
 fn testReadMemory(
