@@ -11,6 +11,7 @@ const OpCode = enum(u8) {
 
 const VMError = error{
     NotImplemented,
+    MemoryReferenceTooLarge,
 };
 
 const VM = struct {
@@ -86,9 +87,8 @@ const VM = struct {
                 self.printVerbose("  Stack: pop 0x{x:0>2}\n", .{size256});
                 self.printVerbose("{s} offset={d}, size={d}\n", .{ @tagName(op), offset256, size256 });
 
-                // TODO: Bounds check
-                const offset: u32 = @truncate(offset256);
-                const size: u32 = @truncate(size256);
+                const offset = std.math.cast(u32, offset256) orelse return VMError.MemoryReferenceTooLarge;
+                const size = std.math.cast(u32, size256) orelse return VMError.MemoryReferenceTooLarge;
 
                 self.returnValue = try readMemory(self.allocator, self.memory.items, offset, size);
                 self.printVerbose("  Return value: 0x{}\n", .{std.fmt.fmtSliceHexLower(self.returnValue)});
