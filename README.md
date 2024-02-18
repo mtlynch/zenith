@@ -11,6 +11,8 @@ For now, this is a just-for-fun experiment to learn more about Zig and Ethereum.
 
 ## Run VM
 
+Run basic operation:
+
 ```bash
 $ echo '60016000526001601ff3' | xxd -r -p | zig build run
 EVM gas used:    18
@@ -18,7 +20,7 @@ execution time:  351.821µs
 0x01
 ```
 
-In verbose mode:
+Run in verbose mode:
 
 ```bash
 $ echo '60016000526001601ff3' | xxd -r -p | zig build run -- -v
@@ -49,7 +51,7 @@ execution time:  830.530µs
 0x01
 ```
 
-For max speed:
+Run with maximum performance:
 
 ```bash
 $ echo '60016000526001601ff3' | xxd -r -p | zig build run -Doptimize=ReleaseFast
