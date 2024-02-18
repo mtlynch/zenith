@@ -113,19 +113,22 @@ pub fn toBigEndian(x: u32) u32 {
 }
 
 pub fn readMemory(allocator: std.mem.Allocator, memory: []const u32, offset: u8, size: u8) ![]u8 {
+    // Make a copy of memory in big-endian order.
     var memoryCopy = try std.ArrayList(u32).initCapacity(allocator, memory.len);
     defer memoryCopy.deinit();
-
-    try memoryCopy.insertSlice(0, memory);
+    for (0..memory.len) |i| {
+        memoryCopy.insertAssumeCapacity(i, toBigEndian(memory[i]));
+    }
 
     const mBytes = std.mem.sliceAsBytes(memoryCopy.items);
 
     var rBytes = try std.ArrayList(u8).initCapacity(allocator, size);
+    errdefer rBytes.deinit();
     for (0..size) |i| {
         try rBytes.insert(i, mBytes[offset + i]);
     }
 
-    return rBytes.toOwnedSlice();
+    return try rBytes.toOwnedSlice();
 }
 
 pub fn main() !void {
@@ -153,16 +156,22 @@ pub fn main() !void {
     try output.print("0x{x:0>2}\n", .{evm.returnValue});
 }
 
-test "convert memory word to bytes" {
+fn testReadMemory(
+    memory: []const u32,
+    offset: u8,
+    size: u8,
+    expected: []const u8,
+) !void {
     const allocator = std.testing.allocator;
+    const rBytes = try readMemory(allocator, memory, offset, size);
+    defer allocator.free(rBytes);
+    try std.testing.expectEqualSlices(u8, expected, rBytes);
+}
 
-    const m = [_]u32{ 0x1234567, 0xabcdef01 };
-
-    const rBytes = try readMemory(allocator, &m, 2, 1);
-
-    std.debug.print("next line?\n", .{});
-    std.debug.print("m        = 0x{x}\n", .{m});
-    for (0..rBytes.len) |i| {
-        std.debug.print("rBytes[{d}]= 0x{x}\n", .{ i, rBytes[i] });
-    }
+test "read from memory as bytes" {
+    try testReadMemory(&[_]u32{ 0x01234567, 0xabcdef44 }, 0, 1, &[_]u8{0x01});
+    try testReadMemory(&[_]u32{ 0x01234567, 0xabcdef44 }, 1, 1, &[_]u8{0x23});
+    try testReadMemory(&[_]u32{ 0x01234567, 0xabcdef44 }, 7, 1, &[_]u8{0x44});
+    try testReadMemory(&[_]u32{ 0x01234567, 0xabcdef44 }, 3, 2, &[_]u8{ 0x67, 0xab });
+    try testReadMemory(&[_]u32{ 0x01234567, 0xabcdef44 }, 4, 3, &[_]u8{ 0xab, 0xcd, 0x1f });
 }
