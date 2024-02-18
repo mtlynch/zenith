@@ -14,21 +14,24 @@ const VMError = error{
 };
 
 const VM = struct {
+    allocator: std.mem.Allocator = undefined,
     stack: std.ArrayList(u8) = undefined,
-    memory: std.ArrayList(u32) = undefined,
-    returnValue: u8 = undefined,
+    memory: std.ArrayList(u256) = undefined,
+    returnValue: []u8 = undefined,
     verbose: bool = false,
     gasConsumed: u64 = 0,
 
     pub fn init(self: *VM, allocator: std.mem.Allocator, verbose: bool) void {
         self.stack = std.ArrayList(u8).init(allocator);
-        self.memory = std.ArrayList(u32).init(allocator);
+        self.memory = std.ArrayList(u256).init(allocator);
+        self.allocator = allocator;
         self.verbose = verbose;
     }
 
     pub fn deinit(self: *VM) void {
         self.stack.deinit();
         self.memory.deinit();
+        self.allocator.free(self.returnValue);
     }
 
     pub fn run(self: *VM, reader: anytype) !void {
@@ -38,7 +41,10 @@ const VM = struct {
     }
 
     pub fn nextInstruction(self: *VM, reader: anytype) !bool {
-        const op: OpCode = reader.readEnum(OpCode, std.builtin.Endian.Little) catch |err| switch (err) {
+        // This doesn't really matter, since the opcode is a single byte.
+        const byteOrder = std.builtin.Endian.Big;
+
+        const op: OpCode = reader.readEnum(OpCode, byteOrder) catch |err| switch (err) {
             error.EndOfStream => {
                 return false;
             },
@@ -60,7 +66,7 @@ const VM = struct {
                 self.printVerbose("  Stack: pop 0x{x:0>2}\n", .{offset});
                 const value = self.stack.pop();
                 self.printVerbose("  Stack: pop 0x{x:0>2}\n", .{value});
-                self.printVerbose("{s} offset=0x{x:0>2}, value=0x{x:0>2}\n", .{ @tagName(op), offset, value });
+                self.printVerbose("{s} offset={d}, value={d}\n", .{ @tagName(op), offset, value });
                 if (offset != 0) {
                     return VMError.NotImplemented;
                 }
@@ -78,17 +84,10 @@ const VM = struct {
                 self.printVerbose("  Stack: pop 0x{x:0>2}\n", .{offset});
                 const size = self.stack.pop();
                 self.printVerbose("  Stack: pop 0x{x:0>2}\n", .{size});
-                self.printVerbose("{s} offset=0x{x:0>2}, size=0x{x:0>2}\n", .{ @tagName(op), offset, size });
-                if (size != 1) {
-                    return VMError.NotImplemented;
-                }
-                if (offset != 31) {
-                    return VMError.NotImplemented;
-                }
-                const val = self.memory.getLast();
-                const shrunk: u8 = @as(u8, @truncate(val));
-                self.returnValue = shrunk;
-                self.printVerbose("RETURN {d}\n", .{shrunk});
+                self.printVerbose("{s} offset={d}, size={d}\n", .{ @tagName(op), offset, size });
+
+                self.returnValue = try readMemory(self.allocator, self.memory.items, offset, size);
+                self.printVerbose("  Return value: 0x{}\n", .{std.fmt.fmtSliceHexLower(self.returnValue)});
                 return true;
             },
             else => {
@@ -104,6 +103,30 @@ const VM = struct {
         }
     }
 };
+
+pub fn toBigEndian(x: u256) u256 {
+    return std.mem.nativeTo(u256, x, std.builtin.Endian.Big);
+}
+
+pub fn readMemory(allocator: std.mem.Allocator, memory: []const u256, offset: u8, size: u8) ![]u8 {
+    // Make a copy of memory in big-endian order.
+    // TODO: We can optimize this to only copy the bytes that we want to read.
+    var memoryCopy = try std.ArrayList(u256).initCapacity(allocator, memory.len);
+    defer memoryCopy.deinit();
+    for (0..memory.len) |i| {
+        memoryCopy.insertAssumeCapacity(i, toBigEndian(memory[i]));
+    }
+
+    const mBytes = std.mem.sliceAsBytes(memoryCopy.items);
+
+    var rBytes = try std.ArrayList(u8).initCapacity(allocator, size);
+    errdefer rBytes.deinit();
+    for (0..size) |i| {
+        try rBytes.insert(i, mBytes[offset + i]);
+    }
+
+    return try rBytes.toOwnedSlice();
+}
 
 pub fn main() !void {
     const verboseMode = ((std.os.argv.len > 1) and std.mem.eql(u8, std.mem.span(std.os.argv[1]), "-v"));
@@ -127,7 +150,7 @@ pub fn main() !void {
     const output = std.io.getStdOut().writer();
     try output.print("EVM gas used:    {}\n", .{evm.gasConsumed});
     try output.print("execution time:  {d:.3}µs\n", .{elapsed_micros});
-    try output.print("0x{x:0>2}\n", .{evm.returnValue});
+    try output.print("0x{}\n", .{std.fmt.fmtSliceHexLower(evm.returnValue)});
 }
 
 test "return single-byte value" {
@@ -153,7 +176,75 @@ test "return single-byte value" {
     try evm.run(&reader);
 
     try std.testing.expectEqual(@as(u64, 18), evm.gasConsumed);
-    try std.testing.expectEqual(@as(u32, 0x01), evm.returnValue);
+    try std.testing.expectEqualSlices(u8, &[_]u8{0x01}, evm.returnValue);
     try std.testing.expectEqualSlices(u8, &[_]u8{}, evm.stack.items);
-    try std.testing.expectEqualSlices(u32, &[_]u32{1}, evm.memory.items);
+    try std.testing.expectEqualSlices(u256, &[_]u256{0x01}, evm.memory.items);
+}
+
+test "return 32-byte value" {
+    const allocator = std.testing.allocator;
+
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(OpCode.PUSH1), 0x01,
+        @intFromEnum(OpCode.PUSH1), 0x00,
+        @intFromEnum(OpCode.MSTORE),
+        @intFromEnum(OpCode.PUSH1), 0x20,
+        @intFromEnum(OpCode.PUSH1), 0x00,
+        @intFromEnum(OpCode.RETURN),
+    };
+    // zig fmt: on
+    var stream = std.io.fixedBufferStream(&bytecode);
+    var reader = stream.reader();
+
+    var evm = VM{};
+    evm.init(allocator, false);
+    defer evm.deinit();
+
+    try evm.run(&reader);
+
+    try std.testing.expectEqual(@as(u64, 18), evm.gasConsumed);
+    try std.testing.expectEqualSlices(u8, &[_]u8{
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+    }, evm.returnValue);
+    try std.testing.expectEqualSlices(u8, &[_]u8{}, evm.stack.items);
+    try std.testing.expectEqualSlices(u256, &[_]u256{0x01}, evm.memory.items);
+}
+
+fn testReadMemory(
+    memory: []const u256,
+    offset: u8,
+    size: u8,
+    expected: []const u8,
+) !void {
+    const allocator = std.testing.allocator;
+    const rBytes = try readMemory(allocator, memory, offset, size);
+    defer allocator.free(rBytes);
+    try std.testing.expectEqualSlices(u8, expected, rBytes);
+}
+
+test "read from memory as bytes" {
+    try testReadMemory(&[_]u256{
+        0x0123456789abcdefaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,
+        0x13579bdf02468ace111111111111111111111111111111111111111111111111,
+    }, 0, 1, &[_]u8{0x01});
+    try testReadMemory(&[_]u256{
+        0x0123456789abcdefaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,
+        0x13579bdf02468ace111111111111111111111111111111111111111111111111,
+    }, 1, 1, &[_]u8{0x23});
+    try testReadMemory(&[_]u256{
+        0x0123456789abcdefaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,
+        0x13579bdf02468ace111111111111111111111111111111111111111111111111,
+    }, 31, 1, &[_]u8{0xaa});
+    try testReadMemory(&[_]u256{
+        0x0123456789abcdefaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,
+        0x13579bdf02468ace111111111111111111111111111111111111111111111111,
+    }, 31, 2, &[_]u8{ 0xaa, 0x13 });
+    try testReadMemory(&[_]u256{
+        0x0123456789abcdefaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,
+        0x13579bdf02468ace111111111111111111111111111111111111111111111111,
+    }, 30, 4, &[_]u8{ 0xaa, 0xaa, 0x13, 0x57 });
 }
