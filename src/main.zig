@@ -87,8 +87,7 @@ const VM = struct {
                 self.printVerbose("{s} offset={d}, size={d}\n", .{ @tagName(op), offset, size });
 
                 self.returnValue = try readMemory(self.allocator, self.memory.items, offset, size);
-                self.printVerbose("RETURN 0x{}\n", .{std.fmt.fmtSliceHexLower(self.returnValue)});
-                //self.printVerbose("RETURN\n", .{});
+                self.printVerbose("  Return value: 0x{}\n", .{std.fmt.fmtSliceHexLower(self.returnValue)});
                 return true;
             },
             else => {
