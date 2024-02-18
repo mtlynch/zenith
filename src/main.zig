@@ -156,6 +156,34 @@ pub fn main() !void {
     try output.print("0x{x:0>2}\n", .{evm.returnValue});
 }
 
+test "return single-byte value" {
+    const allocator = std.testing.allocator;
+
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(OpCode.PUSH1), 0x01,
+        @intFromEnum(OpCode.PUSH1), 0x00,
+        @intFromEnum(OpCode.MSTORE),
+        @intFromEnum(OpCode.PUSH1), 0x01,
+        @intFromEnum(OpCode.PUSH1), 0x1f,
+        @intFromEnum(OpCode.RETURN),
+    };
+    // zig fmt: on
+    var stream = std.io.fixedBufferStream(&bytecode);
+    var reader = stream.reader();
+
+    var evm = VM{};
+    evm.init(allocator, false);
+    defer evm.deinit();
+
+    try evm.run(&reader);
+
+    try std.testing.expectEqual(@as(u64, 18), evm.gasConsumed);
+    try std.testing.expectEqual(@as(u32, 0x01), evm.returnValue);
+    try std.testing.expectEqualSlices(u8, &[_]u8{}, evm.stack.items);
+    try std.testing.expectEqualSlices(u32, &[_]u32{1}, evm.memory.items);
+}
+
 fn testReadMemory(
     memory: []const u32,
     offset: u8,
@@ -173,5 +201,5 @@ test "read from memory as bytes" {
     try testReadMemory(&[_]u32{ 0x01234567, 0xabcdef44 }, 1, 1, &[_]u8{0x23});
     try testReadMemory(&[_]u32{ 0x01234567, 0xabcdef44 }, 7, 1, &[_]u8{0x44});
     try testReadMemory(&[_]u32{ 0x01234567, 0xabcdef44 }, 3, 2, &[_]u8{ 0x67, 0xab });
-    try testReadMemory(&[_]u32{ 0x01234567, 0xabcdef44 }, 4, 3, &[_]u8{ 0xab, 0xcd, 0x1f });
+    try testReadMemory(&[_]u32{ 0x01234567, 0xabcdef44 }, 4, 3, &[_]u8{ 0xab, 0xcd, 0xef });
 }
