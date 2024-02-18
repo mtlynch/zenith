@@ -112,20 +112,20 @@ pub fn toBigEndian(x: u32) u32 {
     return std.mem.nativeTo(u32, x, std.builtin.Endian.Big);
 }
 
-pub fn readMemory(allocator: std.mem.Allocator, memory: []u32, offset: u8, size: u8) []u8 {
-    const memoryCopy = std.ArrayList(u32).initCapacity(allocator, memory.len);
-    for (0..memory.len) |i| {
-        memoryCopy.items[i] = toBigEndian(memory[i]);
-    }
+pub fn readMemory(allocator: std.mem.Allocator, memory: []const u32, offset: u8, size: u8) ![]u8 {
+    var memoryCopy = try std.ArrayList(u32).initCapacity(allocator, memory.len);
+    defer memoryCopy.deinit();
 
-    const mBytes = std.mem.sliceAsBytes(&memoryCopy.items);
+    try memoryCopy.insertSlice(0, memory);
 
-    const rBytes = std.ArrayList(u8).initCapacity(allocator, size);
+    const mBytes = std.mem.sliceAsBytes(memoryCopy.items);
+
+    var rBytes = try std.ArrayList(u8).initCapacity(allocator, size);
     for (0..size) |i| {
-        rBytes.items[i] = mBytes[offset + i];
+        try rBytes.insert(i, mBytes[offset + i]);
     }
 
-    return rBytes.asOwnedSlice();
+    return rBytes.toOwnedSlice();
 }
 
 pub fn main() !void {
@@ -157,24 +157,11 @@ test "convert memory word to bytes" {
     const allocator = std.testing.allocator;
 
     const m = [_]u32{ 0x1234567, 0xabcdef01 };
-    const mBig = [_]u32{ toBigEndian(m[0]), toBigEndian(m[1]) };
 
-    const mBytes = std.mem.sliceAsBytes(&mBig);
-
-    const returnSize = 2;
-    const returnOffset = 1;
-
-    var rBytes = [4]u8{ 0, 0, 0, 0 };
-    for (0..returnSize) |i| {
-        rBytes[i] = mBytes[returnOffset + i];
-    }
+    const rBytes = try readMemory(allocator, &m, 2, 1);
 
     std.debug.print("next line?\n", .{});
     std.debug.print("m        = 0x{x}\n", .{m});
-    for (0..mBytes.len) |i| {
-        std.debug.print("mBytes[{d}]= 0x{x}\n", .{ i, mBytes[i] });
-    }
-    std.debug.print("mBytes   = {*}\n", .{mBytes});
     for (0..rBytes.len) |i| {
         std.debug.print("rBytes[{d}]= 0x{x}\n", .{ i, rBytes[i] });
     }
