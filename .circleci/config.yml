@@ -31,7 +31,11 @@ jobs:
               nix develop --command bash -c 'xxd -r -p < testdata/return-single-byte.bytecode \
                 | zig build run -Doptimize=ReleaseFast' \
                 | grep -oP 'execution time:\s+\K\d+\.\d+' \
-                | tee --append benchmarks/eth-zvm.benchmark
+                | tee --append benchmarks/eth-zvm_single-byte.benchmark
+              nix develop --command bash -c 'xxd -r -p < testdata/return-32-byte.bytecode \
+                | zig build run -Doptimize=ReleaseFast' \
+                | grep -oP 'execution time:\s+\K\d+\.\d+' \
+                | tee --append benchmarks/eth-zvm_32-byte.benchmark
             done
       - persist_to_workspace:
           root: ./
@@ -54,7 +58,10 @@ jobs:
             do
               ./evm run --codefile testdata/return-single-byte.bytecode --statdump \
                 |& grep -oP 'execution time:\s+\K\d+\.\d+' \
-                | tee --append benchmarks/evm.benchmark
+                | tee --append benchmarks/evm_single-byte.benchmark
+              ./evm run --codefile testdata/return-32-byte.bytecode --statdump \
+                |& grep -oP 'execution time:\s+\K\d+\.\d+' \
+                | tee --append benchmarks/evm_32-byte.benchmark
             done
       - persist_to_workspace:
           root: ./
