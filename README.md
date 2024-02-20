@@ -25,29 +25,31 @@ Run in verbose mode:
 ```bash
 $ echo '60016000526001601ff3' | xxd -r -p | zig build run -- -v
 PUSH1 0x01
-  Stack: push 0x01
+  Stack: push 0x1
 ---
 PUSH1 0x00
-  Stack: push 0x00
+  Stack: push 0x0
 ---
-  Stack: pop 0x00
-  Stack: pop 0x01
-MSTORE offset=0, value=1
+MSTORE
+  Stack: pop 0x0
+  Stack: pop 0x1
+  Memory: Writing value=0x1 to memory offset=0
   Memory: 0x00000000000000000000000000000001
 ---
 PUSH1 0x01
-  Stack: push 0x01
+  Stack: push 0x1
 ---
 PUSH1 0x1f
   Stack: push 0x1f
 ---
+RETURN
   Stack: pop 0x1f
-  Stack: pop 0x01
-RETURN offset=31, size=1
+  Stack: pop 0x1
+  Memory: reading size=1 bytes from offset=31
   Return value: 0x01
 ---
 EVM gas used:    18
-execution time:  830.530µs
+execution time:  700.022µs
 0x01
 ```
 
