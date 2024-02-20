@@ -144,9 +144,10 @@ pub fn readMemory(allocator: std.mem.Allocator, memory: []const u256, offset: u3
 pub fn main() !void {
     const verboseMode = ((std.os.argv.len > 1) and std.mem.eql(u8, std.mem.span(std.os.argv[1]), "-v"));
 
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    const allocator = gpa.allocator();
-    defer _ = gpa.deinit();
+    var buffer: [1000]u8 = undefined;
+    var fba = std.heap.FixedBufferAllocator.init(&buffer);
+    const allocator = fba.allocator();
+    defer _ = fba.deinit();
 
     var reader = std.io.getStdIn().reader();
 
