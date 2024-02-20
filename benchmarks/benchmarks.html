@@ -25,6 +25,11 @@
         <canvas id="32-byte"></canvas>
       </div>
 
+      <h2>Count to 1000 by 1</h2>
+      <div class="chart-container">
+        <canvas id="count-to-1000-by-1"></canvas>
+      </div>
+
       <script src="third-party/Chart.js/4.4.1/chart.umd.js"></script>
       <script>
         function median(measurements) {
@@ -94,7 +99,7 @@
         });
         }
 
-        for (const graphId of ["single-byte", "32-byte"]) {
+        for (const graphId of ["single-byte", "32-byte", "count-to-1000-by-1"]) {
           populateGraph(graphId);
         }
       </script>
