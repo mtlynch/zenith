@@ -147,7 +147,6 @@ pub fn main() !void {
     var buffer: [1000]u8 = undefined;
     var fba = std.heap.FixedBufferAllocator.init(&buffer);
     const allocator = fba.allocator();
-    defer _ = fba.deinit();
 
     var reader = std.io.getStdIn().reader();
 
