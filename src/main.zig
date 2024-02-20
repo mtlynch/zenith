@@ -72,11 +72,12 @@ const VM = struct {
                 return true;
             },
             OpCode.MSTORE => {
+                self.printVerbose("{s}\n", .{@tagName(op)});
                 const offset = self.stack.pop();
                 self.printVerbose("  Stack: pop 0x{x}\n", .{offset});
                 const value = self.stack.pop();
                 self.printVerbose("  Stack: pop 0x{x}\n", .{value});
-                self.printVerbose("{s} offset={d}, value=0x{x}\n", .{ @tagName(op), offset, value });
+                self.printVerbose("  Memory: Writing value=0x{x} to memory offset={d}\n", .{ value, offset });
                 if (offset != 0) {
                     return VMError.NotImplemented;
                 }
@@ -90,14 +91,16 @@ const VM = struct {
                 return true;
             },
             OpCode.RETURN => {
+                self.printVerbose("{s}\n", .{@tagName(op)});
                 const offset256 = self.stack.pop();
                 self.printVerbose("  Stack: pop 0x{x}\n", .{offset256});
                 const size256 = self.stack.pop();
                 self.printVerbose("  Stack: pop 0x{x}\n", .{size256});
-                self.printVerbose("{s} offset={d}, size={d}\n", .{ @tagName(op), offset256, size256 });
 
                 const offset = std.math.cast(u32, offset256) orelse return VMError.MemoryReferenceTooLarge;
                 const size = std.math.cast(u32, size256) orelse return VMError.MemoryReferenceTooLarge;
+
+                self.printVerbose("  Memory: reading size={d} bytes from offset={d}\n", .{ size, offset });
 
                 self.returnValue = try readMemory(self.allocator, self.memory.items, offset, size);
                 self.printVerbose("  Return value: 0x{}\n", .{std.fmt.fmtSliceHexLower(self.returnValue)});
