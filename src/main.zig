@@ -3,6 +3,7 @@ const time = std.time;
 const Timer = std.time.Timer;
 
 const OpCode = enum(u8) {
+    ADD = 0x01,
     PUSH1 = 0x60,
     PUSH32 = 0x7f,
     MSTORE = 0x52,
@@ -55,6 +56,20 @@ const VM = struct {
             },
         };
         switch (op) {
+            OpCode.ADD => {
+                self.printVerbose("{s}\n", .{
+                    @tagName(op),
+                });
+                const a = self.stack.pop();
+                self.printVerbose("  Stack: pop 0x{x}\n", .{a});
+                const b = self.stack.pop();
+                self.printVerbose("  Stack: pop 0x{x}\n", .{b});
+                const c = @addWithOverflow(a, b)[0];
+                try self.stack.append(c);
+                self.printVerbose("  Stack: push 0x{x}\n", .{c});
+                self.gasConsumed += 3;
+                return true;
+            },
             OpCode.PUSH1 => {
                 const b = try reader.readByte();
                 self.printVerbose("{s} 0x{x:0>2}\n", .{ @tagName(op), b });
@@ -167,6 +182,54 @@ pub fn main() !void {
     try output.print("EVM gas used:    {}\n", .{evm.gasConsumed});
     try output.print("execution time:  {d:.3}µs\n", .{elapsed_micros});
     try output.print("0x{}\n", .{std.fmt.fmtSliceHexLower(evm.returnValue)});
+}
+
+test "add two bytes" {
+    const allocator = std.testing.allocator;
+
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(OpCode.PUSH1), 0x03,
+        @intFromEnum(OpCode.PUSH1), 0x02,
+        @intFromEnum(OpCode.ADD),
+    };
+    // zig fmt: on
+    var stream = std.io.fixedBufferStream(&bytecode);
+    var reader = stream.reader();
+
+    var evm = VM{};
+    evm.init(allocator, false);
+    defer evm.deinit();
+
+    try evm.run(&reader);
+
+    try std.testing.expectEqual(@as(u64, 9), evm.gasConsumed);
+    try std.testing.expectEqualSlices(u256, &[_]u256{0x05}, evm.stack.items);
+    try std.testing.expectEqualSlices(u256, &[_]u256{}, evm.memory.items);
+}
+
+test "adding one to max u256 should wrap to zero" {
+    const allocator = std.testing.allocator;
+
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(OpCode.PUSH32),  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        @intFromEnum(OpCode.PUSH1), 0x01,
+        @intFromEnum(OpCode.ADD),
+    };
+    // zig fmt: on
+    var stream = std.io.fixedBufferStream(&bytecode);
+    var reader = stream.reader();
+
+    var evm = VM{};
+    evm.init(allocator, false);
+    defer evm.deinit();
+
+    try evm.run(&reader);
+
+    try std.testing.expectEqual(@as(u64, 9), evm.gasConsumed);
+    try std.testing.expectEqualSlices(u256, &[_]u256{0x0}, evm.stack.items);
+    try std.testing.expectEqualSlices(u256, &[_]u256{}, evm.memory.items);
 }
 
 test "return single-byte value" {
