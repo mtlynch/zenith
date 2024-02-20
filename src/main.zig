@@ -18,6 +18,8 @@ const VMError = error{
 
 const VM = struct {
     allocator: std.mem.Allocator = undefined,
+    // TODO: Use a more performant data structure for the stack, taking
+    // advantage of the fact that it's limited to 1024 slots.
     stack: std.ArrayList(u256) = undefined,
     memory: std.ArrayList(u256) = undefined,
     returnValue: []u8 = undefined,
