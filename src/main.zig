@@ -181,7 +181,12 @@ pub fn main() !void {
     const output = std.io.getStdOut().writer();
     try output.print("EVM gas used:    {}\n", .{evm.gasConsumed});
     try output.print("execution time:  {d:.3}µs\n", .{elapsed_micros});
-    try output.print("0x{}\n", .{std.fmt.fmtSliceHexLower(evm.returnValue)});
+    if (evm.returnValue.len > 0) {
+        try output.print("0x{}\n", .{std.fmt.fmtSliceHexLower(evm.returnValue)});
+    } else {
+        // Match evm behavior by outputting a blank line when there is no return value.
+        try output.print("\n", .{});
+    }
 }
 
 test "add two bytes" {
