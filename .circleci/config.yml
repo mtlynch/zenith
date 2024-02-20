@@ -36,12 +36,17 @@ jobs:
                 | zig build run -Doptimize=ReleaseFast' \
                 | grep -oP 'execution time:\s+\K\d+\.\d+' \
                 | tee --append benchmarks/eth-zvm_32-byte.benchmark
+              nix develop --command bash -c 'xxd -r -p < testdata/count-to-1000-by-1.bytecode \
+                | zig build run -Doptimize=ReleaseFast' \
+                | grep -oP 'execution time:\s+\K\d+\.\d+' \
+                | tee --append benchmarks/eth-zvm_count-to-1000-by-1.benchmark
             done
       - persist_to_workspace:
           root: ./
           paths:
             - ./benchmarks/eth-zvm_single-byte.benchmark
             - ./benchmarks/eth-zvm_32-byte.benchmark
+            - ./benchmarks/eth-zvm_count-to-1000-by-1.benchmark
   benchmark_evm:
     docker:
       - image: cimg/base:2024.01
@@ -63,12 +68,16 @@ jobs:
               ./evm run --codefile testdata/return-32-byte.bytecode --statdump \
                 |& grep -oP 'execution time:\s+\K\d+\.\d+' \
                 | tee --append benchmarks/evm_32-byte.benchmark
+              ./evm run --codefile testdata/count-to-1000-by-1.bytecode --statdump \
+                |& grep -oP 'execution time:\s+\K\d+\.\d+' \
+                | tee --append benchmarks/evm_count-to-1000-by-1.benchmark
             done
       - persist_to_workspace:
           root: ./
           paths:
             - ./benchmarks/evm_single-byte.benchmark
             - ./benchmarks/evm_32-byte.benchmark
+            - ./benchmarks/evm_count-to-1000-by-1.benchmark
       - run:
           name: Disassemble bytecode
           command: ./evm disasm testdata/return-single-byte.bytecode
