@@ -16,25 +16,39 @@ const VMError = error{
     MemoryReferenceTooLarge,
 };
 
+const Stack = struct {
+    slots: [1024]u256 = undefined,
+    top: u16 = 0,
+
+    pub fn push(self: *Stack, val: u256) void {
+        self.slots[self.top] = val;
+        self.top += 1;
+    }
+
+    pub fn pop(self: *Stack) u256 {
+        const val = self.slots[self.top];
+        self.top -= 1;
+        return val;
+    }
+};
+
 const VM = struct {
     allocator: std.mem.Allocator = undefined,
     // TODO: Use a more performant data structure for the stack, taking
     // advantage of the fact that it's limited to 1024 slots.
-    stack: std.ArrayList(u256) = undefined,
+    stack: Stack = Stack{},
     memory: std.ArrayList(u256) = undefined,
     returnValue: []u8 = undefined,
     verbose: bool = false,
     gasConsumed: u64 = 0,
 
     pub fn init(self: *VM, allocator: std.mem.Allocator, verbose: bool) void {
-        self.stack = std.ArrayList(u256).init(allocator);
         self.memory = std.ArrayList(u256).init(allocator);
         self.allocator = allocator;
         self.verbose = verbose;
     }
 
     pub fn deinit(self: *VM) void {
-        self.stack.deinit();
         self.memory.deinit();
         self.allocator.free(self.returnValue);
     }
@@ -67,7 +81,7 @@ const VM = struct {
                 const b = self.stack.pop();
                 self.printVerbose("  Stack: pop 0x{x}\n", .{b});
                 const c = @addWithOverflow(a, b)[0];
-                try self.stack.append(c);
+                self.stack.push(c);
                 self.printVerbose("  Stack: push 0x{x}\n", .{c});
                 self.gasConsumed += 3;
                 return true;
@@ -75,7 +89,7 @@ const VM = struct {
             OpCode.PUSH1 => {
                 const b = try reader.readByte();
                 self.printVerbose("{s} 0x{x:0>2}\n", .{ @tagName(op), b });
-                try self.stack.append(b);
+                self.stack.push(b);
                 self.printVerbose("  Stack: push 0x{x}\n", .{b});
                 self.gasConsumed += 3;
                 return true;
@@ -83,7 +97,7 @@ const VM = struct {
             OpCode.PUSH32 => {
                 const b = try reader.readIntBig(u256);
                 self.printVerbose("{s} 0x{x:0>32}\n", .{ @tagName(op), b });
-                try self.stack.append(b);
+                self.stack.push(b);
                 self.printVerbose("  Stack: push 0x{x}\n", .{b});
                 self.gasConsumed += 3;
                 return true;
