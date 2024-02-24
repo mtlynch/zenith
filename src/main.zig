@@ -59,9 +59,9 @@ const VM = struct {
                 self.printVerbose("{s}\n", .{
                     @tagName(op),
                 });
-                const a = self.stack.pop();
+                const a = try self.stack.pop();
                 self.printVerbose("  Stack: pop 0x{x}\n", .{a});
-                const b = self.stack.pop();
+                const b = try self.stack.pop();
                 self.printVerbose("  Stack: pop 0x{x}\n", .{b});
                 const c = @addWithOverflow(a, b)[0];
                 self.stack.push(c);
@@ -87,9 +87,9 @@ const VM = struct {
             },
             OpCode.MSTORE => {
                 self.printVerbose("{s}\n", .{@tagName(op)});
-                const offset = self.stack.pop();
+                const offset = try self.stack.pop();
                 self.printVerbose("  Stack: pop 0x{x}\n", .{offset});
-                const value = self.stack.pop();
+                const value = try self.stack.pop();
                 self.printVerbose("  Stack: pop 0x{x}\n", .{value});
                 self.printVerbose("  Memory: Writing value=0x{x} to memory offset={d}\n", .{ value, offset });
                 if (offset != 0) {
@@ -106,9 +106,9 @@ const VM = struct {
             },
             OpCode.RETURN => {
                 self.printVerbose("{s}\n", .{@tagName(op)});
-                const offset256 = self.stack.pop();
+                const offset256 = try self.stack.pop();
                 self.printVerbose("  Stack: pop 0x{x}\n", .{offset256});
-                const size256 = self.stack.pop();
+                const size256 = try self.stack.pop();
                 self.printVerbose("  Stack: pop 0x{x}\n", .{size256});
 
                 const offset = std.math.cast(u32, offset256) orelse return VMError.MemoryReferenceTooLarge;
