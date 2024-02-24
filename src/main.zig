@@ -1,6 +1,7 @@
 const std = @import("std");
 const time = std.time;
 const Timer = std.time.Timer;
+const stack = @import("stack.zig");
 
 const OpCode = enum(u8) {
     ADD = 0x01,
@@ -16,27 +17,9 @@ const VMError = error{
     MemoryReferenceTooLarge,
 };
 
-const Stack = struct {
-    slots: [1024]u256 = undefined,
-    top: u16 = 0,
-
-    pub fn push(self: *Stack, val: u256) void {
-        self.slots[self.top] = val;
-        self.top += 1;
-    }
-
-    pub fn pop(self: *Stack) u256 {
-        const val = self.slots[self.top];
-        self.top -= 1;
-        return val;
-    }
-};
-
 const VM = struct {
     allocator: std.mem.Allocator = undefined,
-    // TODO: Use a more performant data structure for the stack, taking
-    // advantage of the fact that it's limited to 1024 slots.
-    stack: Stack = Stack{},
+    stack: stack.Stack = stack.Stack{},
     memory: std.ArrayList(u256) = undefined,
     returnValue: []u8 = undefined,
     verbose: bool = false,
@@ -225,7 +208,7 @@ test "add two bytes" {
     try evm.run(&reader);
 
     try std.testing.expectEqual(@as(u64, 9), evm.gasConsumed);
-    try std.testing.expectEqualSlices(u256, &[_]u256{0x05}, evm.stack.items);
+    try std.testing.expectEqualSlices(u256, &[_]u256{0x05}, evm.stack.slice());
     try std.testing.expectEqualSlices(u256, &[_]u256{}, evm.memory.items);
 }
 
@@ -249,7 +232,7 @@ test "adding one to max u256 should wrap to zero" {
     try evm.run(&reader);
 
     try std.testing.expectEqual(@as(u64, 9), evm.gasConsumed);
-    try std.testing.expectEqualSlices(u256, &[_]u256{0x0}, evm.stack.items);
+    try std.testing.expectEqualSlices(u256, &[_]u256{0x0}, evm.stack.slice());
     try std.testing.expectEqualSlices(u256, &[_]u256{}, evm.memory.items);
 }
 
@@ -277,7 +260,7 @@ test "return single-byte value" {
 
     try std.testing.expectEqual(@as(u64, 18), evm.gasConsumed);
     try std.testing.expectEqualSlices(u8, &[_]u8{0x01}, evm.returnValue);
-    try std.testing.expectEqualSlices(u256, &[_]u256{}, evm.stack.items);
+    try std.testing.expectEqualSlices(u256, &[_]u256{}, evm.stack.slice());
     try std.testing.expectEqualSlices(u256, &[_]u256{0x01}, evm.memory.items);
 }
 
@@ -310,7 +293,7 @@ test "return 32-byte value" {
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
     }, evm.returnValue);
-    try std.testing.expectEqualSlices(u256, &[_]u256{}, evm.stack.items);
+    try std.testing.expectEqualSlices(u256, &[_]u256{}, evm.stack.slice());
     try std.testing.expectEqualSlices(u256, &[_]u256{0x01}, evm.memory.items);
 }
 
@@ -338,7 +321,7 @@ test "use push32 and return a single byte" {
 
     try std.testing.expectEqual(@as(u64, 18), evm.gasConsumed);
     try std.testing.expectEqualSlices(u8, &[_]u8{0x10}, evm.returnValue);
-    try std.testing.expectEqualSlices(u256, &[_]u256{}, evm.stack.items);
+    try std.testing.expectEqualSlices(u256, &[_]u256{}, evm.stack.slice());
     try std.testing.expectEqualSlices(u256, &[_]u256{0x1000000000000000000000000000000000000000000000000000000000000000}, evm.memory.items);
 }
 
