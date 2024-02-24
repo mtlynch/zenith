@@ -64,7 +64,7 @@ const VM = struct {
                 const b = try self.stack.pop();
                 self.printVerbose("  Stack: pop 0x{x}\n", .{b});
                 const c = @addWithOverflow(a, b)[0];
-                self.stack.push(c);
+                try self.stack.push(c);
                 self.printVerbose("  Stack: push 0x{x}\n", .{c});
                 self.gasConsumed += 3;
                 return true;
@@ -72,7 +72,7 @@ const VM = struct {
             OpCode.PUSH1 => {
                 const b = try reader.readByte();
                 self.printVerbose("{s} 0x{x:0>2}\n", .{ @tagName(op), b });
-                self.stack.push(b);
+                try self.stack.push(b);
                 self.printVerbose("  Stack: push 0x{x}\n", .{b});
                 self.gasConsumed += 3;
                 return true;
@@ -80,7 +80,7 @@ const VM = struct {
             OpCode.PUSH32 => {
                 const b = try reader.readIntBig(u256);
                 self.printVerbose("{s} 0x{x:0>32}\n", .{ @tagName(op), b });
-                self.stack.push(b);
+                try self.stack.push(b);
                 self.printVerbose("  Stack: push 0x{x}\n", .{b});
                 self.gasConsumed += 3;
                 return true;
