@@ -23,14 +23,12 @@ const VM = struct {
     stack: std.ArrayList(u256) = undefined,
     memory: std.ArrayList(u256) = undefined,
     returnValue: []u8 = undefined,
-    verbose: bool = false,
     gasConsumed: u64 = 0,
 
-    pub fn init(self: *VM, allocator: std.mem.Allocator, verbose: bool) void {
+    pub fn init(self: *VM, allocator: std.mem.Allocator) void {
         self.stack = std.ArrayList(u256).init(allocator);
         self.memory = std.ArrayList(u256).init(allocator);
         self.allocator = allocator;
-        self.verbose = verbose;
     }
 
     pub fn deinit(self: *VM) void {
@@ -41,7 +39,7 @@ const VM = struct {
 
     pub fn run(self: *VM, reader: anytype) !void {
         while (try self.nextInstruction(reader)) {
-            self.printVerbose("---\n", .{});
+            std.log.debug("---", .{});
         }
     }
 
@@ -59,46 +57,46 @@ const VM = struct {
         };
         switch (op) {
             OpCode.ADD => {
-                self.printVerbose("{s}\n", .{
+                std.log.debug("{s}", .{
                     @tagName(op),
                 });
                 const a = self.stack.pop();
-                self.printVerbose("  Stack: pop 0x{x}\n", .{a});
+                std.log.debug("  Stack: pop 0x{x}", .{a});
                 const b = self.stack.pop();
-                self.printVerbose("  Stack: pop 0x{x}\n", .{b});
+                std.log.debug("  Stack: pop 0x{x}", .{b});
                 const c = @addWithOverflow(a, b)[0];
                 try self.stack.append(c);
-                self.printVerbose("  Stack: push 0x{x}\n", .{c});
+                std.log.debug("  Stack: push 0x{x}", .{c});
                 self.gasConsumed += 3;
                 return true;
             },
             OpCode.PUSH1 => {
                 const b = try reader.readByte();
-                self.printVerbose("{s} 0x{x:0>2}\n", .{ @tagName(op), b });
+                std.log.debug("{s} 0x{x:0>2}", .{ @tagName(op), b });
                 try self.stack.append(b);
-                self.printVerbose("  Stack: push 0x{x}\n", .{b});
+                std.log.debug("  Stack: push 0x{x}", .{b});
                 self.gasConsumed += 3;
                 return true;
             },
             OpCode.PUSH32 => {
                 const b = try reader.readIntBig(u256);
-                self.printVerbose("{s} 0x{x:0>32}\n", .{ @tagName(op), b });
+                std.log.debug("{s} 0x{x:0>32}", .{ @tagName(op), b });
                 try self.stack.append(b);
-                self.printVerbose("  Stack: push 0x{x}\n", .{b});
+                std.log.debug("  Stack: push 0x{x}", .{b});
                 self.gasConsumed += 3;
                 return true;
             },
             OpCode.MSTORE => {
-                self.printVerbose("{s}\n", .{@tagName(op)});
+                std.log.debug("{s}", .{@tagName(op)});
                 const offset = self.stack.pop();
-                self.printVerbose("  Stack: pop 0x{x}\n", .{offset});
+                std.log.debug("  Stack: pop 0x{x}", .{offset});
                 const value = self.stack.pop();
-                self.printVerbose("  Stack: pop 0x{x}\n", .{value});
-                self.printVerbose("  Memory: Writing value=0x{x} to memory offset={d}\n", .{ value, offset });
+                std.log.debug("  Stack: pop 0x{x}", .{value});
+                std.log.debug("  Memory: Writing value=0x{x} to memory offset={d}", .{ value, offset });
                 if (offset != 0) {
                     return VMError.NotImplemented;
                 }
-                self.printVerbose("  Memory: 0x{x:0>32}\n", .{value});
+                std.log.debug("  Memory: 0x{x:0>32}", .{value});
 
                 const oldState = ((self.memory.items.len << 2) / 512) + (3 * self.memory.items.len);
                 try self.memory.append(value);
@@ -108,31 +106,25 @@ const VM = struct {
                 return true;
             },
             OpCode.RETURN => {
-                self.printVerbose("{s}\n", .{@tagName(op)});
+                std.log.debug("{s}", .{@tagName(op)});
                 const offset256 = self.stack.pop();
-                self.printVerbose("  Stack: pop 0x{x}\n", .{offset256});
+                std.log.debug("  Stack: pop 0x{x}", .{offset256});
                 const size256 = self.stack.pop();
-                self.printVerbose("  Stack: pop 0x{x}\n", .{size256});
+                std.log.debug("  Stack: pop 0x{x}", .{size256});
 
                 const offset = std.math.cast(u32, offset256) orelse return VMError.MemoryReferenceTooLarge;
                 const size = std.math.cast(u32, size256) orelse return VMError.MemoryReferenceTooLarge;
 
-                self.printVerbose("  Memory: reading size={d} bytes from offset={d}\n", .{ size, offset });
+                std.log.debug("  Memory: reading size={d} bytes from offset={d}", .{ size, offset });
 
                 self.returnValue = try readMemory(self.allocator, self.memory.items, offset, size);
-                self.printVerbose("  Return value: 0x{}\n", .{std.fmt.fmtSliceHexLower(self.returnValue)});
+                std.log.debug("  Return value: 0x{}", .{std.fmt.fmtSliceHexLower(self.returnValue)});
                 return true;
             },
             else => {
-                self.printVerbose("Not yet handling opcode {d}\n", .{op});
+                std.log.err("Not yet handling opcode {d}", .{op});
                 return VMError.NotImplemented;
             },
-        }
-    }
-
-    fn printVerbose(self: VM, comptime fmt: []const u8, args: anytype) void {
-        if (self.verbose) {
-            std.debug.print(fmt, args);
         }
     }
 };
@@ -162,8 +154,6 @@ pub fn readMemory(allocator: std.mem.Allocator, memory: []const u256, offset: u3
 }
 
 pub fn main() !void {
-    const verboseMode = ((std.os.argv.len > 1) and std.mem.eql(u8, std.mem.span(std.os.argv[1]), "-v"));
-
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
     defer _ = gpa.deinit();
@@ -171,7 +161,7 @@ pub fn main() !void {
     var reader = std.io.getStdIn().reader();
 
     var evm = VM{};
-    evm.init(allocator, verboseMode);
+    evm.init(allocator);
     defer evm.deinit();
 
     var timer = try Timer.start();
