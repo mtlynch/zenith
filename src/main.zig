@@ -195,7 +195,7 @@ test "add two bytes" {
     var reader = stream.reader();
 
     var evm = VM{};
-    evm.init(allocator, false);
+    evm.init(allocator);
     defer evm.deinit();
 
     try evm.run(&reader);
@@ -219,7 +219,7 @@ test "adding one to max u256 should wrap to zero" {
     var reader = stream.reader();
 
     var evm = VM{};
-    evm.init(allocator, false);
+    evm.init(allocator);
     defer evm.deinit();
 
     try evm.run(&reader);
@@ -246,7 +246,7 @@ test "return single-byte value" {
     var reader = stream.reader();
 
     var evm = VM{};
-    evm.init(allocator, false);
+    evm.init(allocator);
     defer evm.deinit();
 
     try evm.run(&reader);
@@ -274,7 +274,7 @@ test "return 32-byte value" {
     var reader = stream.reader();
 
     var evm = VM{};
-    evm.init(allocator, false);
+    evm.init(allocator);
     defer evm.deinit();
 
     try evm.run(&reader);
@@ -307,7 +307,7 @@ test "use push32 and return a single byte" {
     var reader = stream.reader();
 
     var evm = VM{};
-    evm.init(allocator, false);
+    evm.init(allocator);
     defer evm.deinit();
 
     try evm.run(&reader);
