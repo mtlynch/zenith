@@ -3,3 +3,5 @@
 bin/
 zig-cache/
 zig-out/
+
+callgrind*

@@ -42,16 +42,14 @@ const VM = struct {
 
     pub fn nextInstruction(self: *VM, reader: anytype) !bool {
         // This doesn't really matter, since the opcode is a single byte.
-        const byteOrder = std.builtin.Endian.Big;
+        //const byteOrder = std.builtin.Endian.Big;
 
-        const op: OpCode = reader.readEnum(OpCode, byteOrder) catch |err| switch (err) {
+        const opb: u8 = reader.readByte() catch |err| switch (err) {
             error.EndOfStream => {
                 return false;
             },
-            else => {
-                return err;
-            },
         };
+        const op: OpCode = @enumFromInt(opb);
         switch (op) {
             OpCode.ADD => {
                 std.log.debug("{s}", .{

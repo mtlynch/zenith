@@ -22,6 +22,7 @@
           zig_dep.xxd
           zig_dep.zig
           zls_dep.zls
+          zls_dep.valgrind
         ];
 
         shellHook = ''
