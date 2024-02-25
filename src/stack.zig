@@ -10,6 +10,7 @@ pub const Stack = struct {
     size: u16 = 0,
 
     pub fn push(self: *Stack, val: u256) !void {
+        std.log.debug("  Stack: push 0x{x}", .{val});
         if (self.size == self.slots.len) {
             return StackError.Overflow;
         }
@@ -23,6 +24,7 @@ pub const Stack = struct {
         }
         self.size -= 1;
         const val = self.slots[self.size];
+        std.log.debug("  Stack: pop 0x{x}", .{val});
         return val;
     }
 
