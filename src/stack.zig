@@ -11,17 +11,13 @@ pub const Stack = struct {
 
     pub fn push(self: *Stack, val: u256) !void {
         std.log.debug("  Stack: push 0x{x}", .{val});
-        if (self.size == self.slots.len) {
-            return StackError.Overflow;
-        }
+        std.debug.assert(self.size != self.slots.len);
         self.slots[self.size] = val;
         self.size += 1;
     }
 
     pub fn pop(self: *Stack) !u256 {
-        if (self.size == 0) {
-            return StackError.EmptyStack;
-        }
+        std.debug.assert(self.size > 0);
         self.size -= 1;
         const val = self.slots[self.size];
         std.log.debug("  Stack: pop 0x{x}", .{val});
