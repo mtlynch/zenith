@@ -1,6 +1,7 @@
 const std = @import("std");
 const time = std.time;
 const Timer = std.time.Timer;
+const stack = @import("stack.zig");
 
 const OpCode = enum(u8) {
     ADD = 0x01,
@@ -18,21 +19,17 @@ const VMError = error{
 
 const VM = struct {
     allocator: std.mem.Allocator = undefined,
-    // TODO: Use a more performant data structure for the stack, taking
-    // advantage of the fact that it's limited to 1024 slots.
-    stack: std.ArrayList(u256) = undefined,
+    stack: stack.Stack = stack.Stack{},
     memory: std.ArrayList(u256) = undefined,
     returnValue: []u8 = undefined,
     gasConsumed: u64 = 0,
 
     pub fn init(self: *VM, allocator: std.mem.Allocator) void {
-        self.stack = std.ArrayList(u256).init(allocator);
         self.memory = std.ArrayList(u256).init(allocator);
         self.allocator = allocator;
     }
 
     pub fn deinit(self: *VM) void {
-        self.stack.deinit();
         self.memory.deinit();
         self.allocator.free(self.returnValue);
     }
@@ -60,38 +57,31 @@ const VM = struct {
                 std.log.debug("{s}", .{
                     @tagName(op),
                 });
-                const a = self.stack.pop();
-                std.log.debug("  Stack: pop 0x{x}", .{a});
-                const b = self.stack.pop();
-                std.log.debug("  Stack: pop 0x{x}", .{b});
+                const a = try self.stack.pop();
+                const b = try self.stack.pop();
                 const c = @addWithOverflow(a, b)[0];
-                try self.stack.append(c);
-                std.log.debug("  Stack: push 0x{x}", .{c});
+                try self.stack.push(c);
                 self.gasConsumed += 3;
                 return true;
             },
             OpCode.PUSH1 => {
                 const b = try reader.readByte();
                 std.log.debug("{s} 0x{x:0>2}", .{ @tagName(op), b });
-                try self.stack.append(b);
-                std.log.debug("  Stack: push 0x{x}", .{b});
+                try self.stack.push(b);
                 self.gasConsumed += 3;
                 return true;
             },
             OpCode.PUSH32 => {
                 const b = try reader.readIntBig(u256);
                 std.log.debug("{s} 0x{x:0>32}", .{ @tagName(op), b });
-                try self.stack.append(b);
-                std.log.debug("  Stack: push 0x{x}", .{b});
+                try self.stack.push(b);
                 self.gasConsumed += 3;
                 return true;
             },
             OpCode.MSTORE => {
                 std.log.debug("{s}", .{@tagName(op)});
-                const offset = self.stack.pop();
-                std.log.debug("  Stack: pop 0x{x}", .{offset});
-                const value = self.stack.pop();
-                std.log.debug("  Stack: pop 0x{x}", .{value});
+                const offset = try self.stack.pop();
+                const value = try self.stack.pop();
                 std.log.debug("  Memory: Writing value=0x{x} to memory offset={d}", .{ value, offset });
                 if (offset != 0) {
                     return VMError.NotImplemented;
@@ -107,10 +97,8 @@ const VM = struct {
             },
             OpCode.RETURN => {
                 std.log.debug("{s}", .{@tagName(op)});
-                const offset256 = self.stack.pop();
-                std.log.debug("  Stack: pop 0x{x}", .{offset256});
-                const size256 = self.stack.pop();
-                std.log.debug("  Stack: pop 0x{x}", .{size256});
+                const offset256 = try self.stack.pop();
+                const size256 = try self.stack.pop();
 
                 const offset = std.math.cast(u32, offset256) orelse return VMError.MemoryReferenceTooLarge;
                 const size = std.math.cast(u32, size256) orelse return VMError.MemoryReferenceTooLarge;
@@ -201,7 +189,7 @@ test "add two bytes" {
     try evm.run(&reader);
 
     try std.testing.expectEqual(@as(u64, 9), evm.gasConsumed);
-    try std.testing.expectEqualSlices(u256, &[_]u256{0x05}, evm.stack.items);
+    try std.testing.expectEqualSlices(u256, &[_]u256{0x05}, evm.stack.slice());
     try std.testing.expectEqualSlices(u256, &[_]u256{}, evm.memory.items);
 }
 
@@ -225,7 +213,7 @@ test "adding one to max u256 should wrap to zero" {
     try evm.run(&reader);
 
     try std.testing.expectEqual(@as(u64, 9), evm.gasConsumed);
-    try std.testing.expectEqualSlices(u256, &[_]u256{0x0}, evm.stack.items);
+    try std.testing.expectEqualSlices(u256, &[_]u256{0x0}, evm.stack.slice());
     try std.testing.expectEqualSlices(u256, &[_]u256{}, evm.memory.items);
 }
 
@@ -253,7 +241,7 @@ test "return single-byte value" {
 
     try std.testing.expectEqual(@as(u64, 18), evm.gasConsumed);
     try std.testing.expectEqualSlices(u8, &[_]u8{0x01}, evm.returnValue);
-    try std.testing.expectEqualSlices(u256, &[_]u256{}, evm.stack.items);
+    try std.testing.expectEqualSlices(u256, &[_]u256{}, evm.stack.slice());
     try std.testing.expectEqualSlices(u256, &[_]u256{0x01}, evm.memory.items);
 }
 
@@ -286,7 +274,7 @@ test "return 32-byte value" {
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
     }, evm.returnValue);
-    try std.testing.expectEqualSlices(u256, &[_]u256{}, evm.stack.items);
+    try std.testing.expectEqualSlices(u256, &[_]u256{}, evm.stack.slice());
     try std.testing.expectEqualSlices(u256, &[_]u256{0x01}, evm.memory.items);
 }
 
@@ -314,7 +302,7 @@ test "use push32 and return a single byte" {
 
     try std.testing.expectEqual(@as(u64, 18), evm.gasConsumed);
     try std.testing.expectEqualSlices(u8, &[_]u8{0x10}, evm.returnValue);
-    try std.testing.expectEqualSlices(u256, &[_]u256{}, evm.stack.items);
+    try std.testing.expectEqualSlices(u256, &[_]u256{}, evm.stack.slice());
     try std.testing.expectEqualSlices(u256, &[_]u256{0x1000000000000000000000000000000000000000000000000000000000000000}, evm.memory.items);
 }
 
