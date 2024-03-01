@@ -31,3 +31,7 @@ pub fn main() !void {
         try output.print("\n", .{});
     }
 }
+
+test {
+    std.testing.refAllDecls(@This());
+}
