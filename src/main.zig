@@ -1,6 +1,4 @@
 const std = @import("std");
-const time = std.time;
-const Timer = std.time.Timer;
 const stack = @import("stack.zig");
 const vm = @import("vm.zig");
 
@@ -15,11 +13,11 @@ pub fn main() !void {
     evm.init(allocator);
     defer evm.deinit();
 
-    var timer = try Timer.start();
+    var timer = try std.time.Timer.start();
     const start = timer.lap();
     try evm.run(&reader);
     const end = timer.read();
-    const elapsed_micros = @as(f64, @floatFromInt(end - start)) / time.ns_per_us;
+    const elapsed_micros = @as(f64, @floatFromInt(end - start)) / std.time.ns_per_us;
 
     const output = std.io.getStdOut().writer();
     try output.print("EVM gas used:    {}\n", .{evm.gasConsumed});
