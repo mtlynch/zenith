@@ -139,9 +139,25 @@ fn readMemory(allocator: std.mem.Allocator, memory: []const u256, offset: u32, s
     return try rBytes.toOwnedSlice();
 }
 
-test "add two bytes" {
+fn testBytecode(bytecode: []const u8, expectedReturnValue: []const u8, expectedGasConsumed: u64, expectedStack: []const u256, expectedMemory: []const u256) !void {
     const allocator = std.testing.allocator;
 
+    var stream = std.io.fixedBufferStream(bytecode);
+    var reader = stream.reader();
+
+    var evm = VM{};
+    evm.init(allocator);
+    defer evm.deinit();
+
+    try evm.run(&reader);
+
+    try std.testing.expectEqualSlices(u8, expectedReturnValue, evm.returnValue);
+    try std.testing.expectEqual(expectedGasConsumed, evm.gasConsumed);
+    try std.testing.expectEqualSlices(u256, expectedStack, evm.stack.slice());
+    try std.testing.expectEqualSlices(u256, expectedMemory, evm.memory.items);
+}
+
+test "add two bytes" {
     // zig fmt: off
     const bytecode = [_]u8{
         @intFromEnum(OpCode.PUSH1), 0x03,
@@ -149,23 +165,12 @@ test "add two bytes" {
         @intFromEnum(OpCode.ADD),
     };
     // zig fmt: on
-    var stream = std.io.fixedBufferStream(&bytecode);
-    var reader = stream.reader();
 
-    var evm = VM{};
-    evm.init(allocator);
-    defer evm.deinit();
-
-    try evm.run(&reader);
-
-    try std.testing.expectEqual(@as(u64, 9), evm.gasConsumed);
-    try std.testing.expectEqualSlices(u256, &[_]u256{0x05}, evm.stack.slice());
-    try std.testing.expectEqualSlices(u256, &[_]u256{}, evm.memory.items);
+    const expectedReturnValue = [_]u8{};
+    try testBytecode(&bytecode, &expectedReturnValue, 9, &[_]u256{0x05}, &[_]u256{});
 }
 
 test "adding one to max u256 should wrap to zero" {
-    const allocator = std.testing.allocator;
-
     // zig fmt: off
     const bytecode = [_]u8{
         @intFromEnum(OpCode.PUSH32),  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
@@ -173,23 +178,15 @@ test "adding one to max u256 should wrap to zero" {
         @intFromEnum(OpCode.ADD),
     };
     // zig fmt: on
-    var stream = std.io.fixedBufferStream(&bytecode);
-    var reader = stream.reader();
 
-    var evm = VM{};
-    evm.init(allocator);
-    defer evm.deinit();
-
-    try evm.run(&reader);
-
-    try std.testing.expectEqual(@as(u64, 9), evm.gasConsumed);
-    try std.testing.expectEqualSlices(u256, &[_]u256{0x0}, evm.stack.slice());
-    try std.testing.expectEqualSlices(u256, &[_]u256{}, evm.memory.items);
+    const expectedReturnValue = [_]u8{};
+    const expectedGasConsumed = 9;
+    const expectedStack = [_]u256{0x0};
+    const expectedMemory = [_]u256{};
+    try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
 }
 
 test "return single-byte value" {
-    const allocator = std.testing.allocator;
-
     // zig fmt: off
     const bytecode = [_]u8{
         @intFromEnum(OpCode.PUSH1), 0x01,
@@ -200,24 +197,15 @@ test "return single-byte value" {
         @intFromEnum(OpCode.RETURN),
     };
     // zig fmt: on
-    var stream = std.io.fixedBufferStream(&bytecode);
-    var reader = stream.reader();
 
-    var evm = VM{};
-    evm.init(allocator);
-    defer evm.deinit();
-
-    try evm.run(&reader);
-
-    try std.testing.expectEqual(@as(u64, 18), evm.gasConsumed);
-    try std.testing.expectEqualSlices(u8, &[_]u8{0x01}, evm.returnValue);
-    try std.testing.expectEqualSlices(u256, &[_]u256{}, evm.stack.slice());
-    try std.testing.expectEqualSlices(u256, &[_]u256{0x01}, evm.memory.items);
+    const expectedReturnValue = [_]u8{0x01};
+    const expectedGasConsumed = 18;
+    const expectedStack = [_]u256{};
+    const expectedMemory = [_]u256{0x01};
+    try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
 }
 
 test "return 32-byte value" {
-    const allocator = std.testing.allocator;
-
     // zig fmt: off
     const bytecode = [_]u8{
         @intFromEnum(OpCode.PUSH1), 0x01,
@@ -228,29 +216,20 @@ test "return 32-byte value" {
         @intFromEnum(OpCode.RETURN),
     };
     // zig fmt: on
-    var stream = std.io.fixedBufferStream(&bytecode);
-    var reader = stream.reader();
 
-    var evm = VM{};
-    evm.init(allocator);
-    defer evm.deinit();
-
-    try evm.run(&reader);
-
-    try std.testing.expectEqual(@as(u64, 18), evm.gasConsumed);
-    try std.testing.expectEqualSlices(u8, &[_]u8{
+    const expectedReturnValue = [_]u8{
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
-    }, evm.returnValue);
-    try std.testing.expectEqualSlices(u256, &[_]u256{}, evm.stack.slice());
-    try std.testing.expectEqualSlices(u256, &[_]u256{0x01}, evm.memory.items);
+    };
+    const expectedGasConsumed = 18;
+    const expectedStack = [_]u256{};
+    const expectedMemory = [_]u256{0x01};
+    try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
 }
 
 test "use push32 and return a single byte" {
-    const allocator = std.testing.allocator;
-
     // zig fmt: off
     const bytecode = [_]u8{
         @intFromEnum(OpCode.PUSH32), 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -261,19 +240,12 @@ test "use push32 and return a single byte" {
         @intFromEnum(OpCode.RETURN),
     };
     // zig fmt: on
-    var stream = std.io.fixedBufferStream(&bytecode);
-    var reader = stream.reader();
 
-    var evm = VM{};
-    evm.init(allocator);
-    defer evm.deinit();
-
-    try evm.run(&reader);
-
-    try std.testing.expectEqual(@as(u64, 18), evm.gasConsumed);
-    try std.testing.expectEqualSlices(u8, &[_]u8{0x10}, evm.returnValue);
-    try std.testing.expectEqualSlices(u256, &[_]u256{}, evm.stack.slice());
-    try std.testing.expectEqualSlices(u256, &[_]u256{0x1000000000000000000000000000000000000000000000000000000000000000}, evm.memory.items);
+    const expectedReturnValue = [_]u8{0x10};
+    const expectedGasConsumed = 18;
+    const expectedStack = [_]u256{};
+    const expectedMemory = [_]u256{0x1000000000000000000000000000000000000000000000000000000000000000};
+    try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
 }
 
 fn testReadMemory(
