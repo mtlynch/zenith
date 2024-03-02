@@ -1,4 +1,5 @@
 const std = @import("std");
+const memory = @import("memory.zig");
 const stack = @import("stack.zig");
 
 pub const OpCode = enum(u8) {
@@ -16,20 +17,18 @@ pub const VMError = error{
 };
 
 pub const VM = struct {
-    allocator: std.mem.Allocator = undefined,
     stack: stack.Stack = stack.Stack{},
-    memory: std.ArrayList(u256) = undefined,
+    memory: memory.ExpandableMemory = memory.ExpandableMemory{},
     returnValue: []u8 = undefined,
     gasConsumed: u64 = 0,
 
     pub fn init(self: *VM, allocator: std.mem.Allocator) void {
-        self.memory = std.ArrayList(u256).init(allocator);
-        self.allocator = allocator;
+        self.memory.init(allocator);
     }
 
     pub fn deinit(self: *VM) void {
+        self.memory.allocator.free(self.returnValue);
         self.memory.deinit();
-        self.allocator.free(self.returnValue);
     }
 
     pub fn run(self: *VM, reader: anytype) !void {
@@ -86,9 +85,9 @@ pub const VM = struct {
                 }
                 std.log.debug("  Memory: 0x{x:0>32}", .{value});
 
-                const oldState = ((self.memory.items.len << 2) / 512) + (3 * self.memory.items.len);
-                try self.memory.append(value);
-                const newState = ((self.memory.items.len << 2) / 512) + (3 * self.memory.items.len);
+                const oldState = ((self.memory.length() << 2) / 512) + (3 * self.memory.length());
+                try self.memory.write(value);
+                const newState = ((self.memory.length() << 2) / 512) + (3 * self.memory.length());
                 self.gasConsumed += 3;
                 self.gasConsumed += @as(u64, newState - oldState);
                 return true;
@@ -103,7 +102,7 @@ pub const VM = struct {
 
                 std.log.debug("  Memory: reading size={d} bytes from offset={d}", .{ size, offset });
 
-                self.returnValue = try readMemory(self.allocator, self.memory.items, offset, size);
+                self.returnValue = try self.memory.read(offset, size);
                 std.log.debug("  Return value: 0x{}", .{std.fmt.fmtSliceHexLower(self.returnValue)});
                 return true;
             },
@@ -114,30 +113,6 @@ pub const VM = struct {
         }
     }
 };
-
-fn toBigEndian(x: u256) u256 {
-    return std.mem.nativeTo(u256, x, std.builtin.Endian.Big);
-}
-
-fn readMemory(allocator: std.mem.Allocator, memory: []const u256, offset: u32, size: u32) ![]u8 {
-    // Make a copy of memory in big-endian order.
-    // TODO: We can optimize this to only copy the bytes that we want to read.
-    var memoryCopy = try std.ArrayList(u256).initCapacity(allocator, memory.len);
-    defer memoryCopy.deinit();
-    for (0..memory.len) |i| {
-        memoryCopy.insertAssumeCapacity(i, toBigEndian(memory[i]));
-    }
-
-    const mBytes = std.mem.sliceAsBytes(memoryCopy.items);
-
-    var rBytes = try std.ArrayList(u8).initCapacity(allocator, size);
-    errdefer rBytes.deinit();
-    for (0..size) |i| {
-        try rBytes.insert(i, mBytes[offset + i]);
-    }
-
-    return try rBytes.toOwnedSlice();
-}
 
 fn testBytecode(bytecode: []const u8, expectedReturnValue: []const u8, expectedGasConsumed: u64, expectedStack: []const u256, expectedMemory: []const u256) !void {
     const allocator = std.testing.allocator;
@@ -154,7 +129,7 @@ fn testBytecode(bytecode: []const u8, expectedReturnValue: []const u8, expectedG
     try std.testing.expectEqualSlices(u8, expectedReturnValue, evm.returnValue);
     try std.testing.expectEqual(expectedGasConsumed, evm.gasConsumed);
     try std.testing.expectEqualSlices(u256, expectedStack, evm.stack.slice());
-    try std.testing.expectEqualSlices(u256, expectedMemory, evm.memory.items);
+    try std.testing.expectEqualSlices(u256, expectedMemory, evm.memory.slice());
 }
 
 test "add two bytes" {
@@ -246,39 +221,4 @@ test "use push32 and return a single byte" {
     const expectedStack = [_]u256{};
     const expectedMemory = [_]u256{0x1000000000000000000000000000000000000000000000000000000000000000};
     try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
-}
-
-fn testReadMemory(
-    memory: []const u256,
-    offset: u8,
-    size: u8,
-    expected: []const u8,
-) !void {
-    const allocator = std.testing.allocator;
-    const rBytes = try readMemory(allocator, memory, offset, size);
-    defer allocator.free(rBytes);
-    try std.testing.expectEqualSlices(u8, expected, rBytes);
-}
-
-test "read from memory as bytes" {
-    try testReadMemory(&[_]u256{
-        0x0123456789abcdefaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,
-        0x13579bdf02468ace111111111111111111111111111111111111111111111111,
-    }, 0, 1, &[_]u8{0x01});
-    try testReadMemory(&[_]u256{
-        0x0123456789abcdefaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,
-        0x13579bdf02468ace111111111111111111111111111111111111111111111111,
-    }, 1, 1, &[_]u8{0x23});
-    try testReadMemory(&[_]u256{
-        0x0123456789abcdefaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,
-        0x13579bdf02468ace111111111111111111111111111111111111111111111111,
-    }, 31, 1, &[_]u8{0xaa});
-    try testReadMemory(&[_]u256{
-        0x0123456789abcdefaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,
-        0x13579bdf02468ace111111111111111111111111111111111111111111111111,
-    }, 31, 2, &[_]u8{ 0xaa, 0x13 });
-    try testReadMemory(&[_]u256{
-        0x0123456789abcdefaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,
-        0x13579bdf02468ace111111111111111111111111111111111111111111111111,
-    }, 30, 4, &[_]u8{ 0xaa, 0xaa, 0x13, 0x57 });
 }
