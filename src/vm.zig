@@ -17,6 +17,7 @@ pub const VMError = error{
 };
 
 pub const VM = struct {
+    allocator: std.mem.Allocator = undefined,
     stack: stack.Stack = stack.Stack{},
     memory: memory.ExpandableMemory = memory.ExpandableMemory{},
     returnValue: []u8 = undefined,
@@ -24,11 +25,12 @@ pub const VM = struct {
 
     pub fn init(self: *VM, allocator: std.mem.Allocator) void {
         self.memory.init(allocator);
+        self.allocator = allocator;
     }
 
     pub fn deinit(self: *VM) void {
-        self.memory.allocator.free(self.returnValue);
         self.memory.deinit();
+        self.allocator.free(self.returnValue);
     }
 
     pub fn run(self: *VM, reader: anytype) !void {
@@ -102,7 +104,7 @@ pub const VM = struct {
 
                 std.log.debug("  Memory: reading size={d} bytes from offset={d}", .{ size, offset });
 
-                self.returnValue = try self.memory.read(offset, size);
+                self.returnValue = try self.memory.read(self.allocator, offset, size);
                 std.log.debug("  Return value: 0x{}", .{std.fmt.fmtSliceHexLower(self.returnValue)});
                 return true;
             },

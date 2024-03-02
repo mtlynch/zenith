@@ -1,12 +1,10 @@
 const std = @import("std");
 
 pub const ExpandableMemory = struct {
-    allocator: std.mem.Allocator = undefined,
     storage: std.ArrayList(u256) = undefined,
 
     pub fn init(self: *ExpandableMemory, allocator: std.mem.Allocator) void {
         self.storage = std.ArrayList(u256).init(allocator);
-        self.allocator = allocator;
     }
 
     pub fn deinit(self: *ExpandableMemory) void {
@@ -17,10 +15,10 @@ pub const ExpandableMemory = struct {
         return self.storage.append(value);
     }
 
-    pub fn read(self: ExpandableMemory, offset: u32, size: u32) ![]u8 {
+    pub fn read(self: ExpandableMemory, allocator: std.mem.Allocator, offset: u32, size: u32) ![]u8 {
         // Make a copy of memory in big-endian order.
         // TODO: We can optimize this to only copy the bytes that we want to read.
-        var memoryCopy = try std.ArrayList(u256).initCapacity(self.allocator, self.storage.items.len);
+        var memoryCopy = try std.ArrayList(u256).initCapacity(allocator, self.storage.items.len);
         defer memoryCopy.deinit();
         for (0..self.storage.items.len) |i| {
             memoryCopy.insertAssumeCapacity(i, toBigEndian(self.storage.items[i]));
@@ -28,7 +26,7 @@ pub const ExpandableMemory = struct {
 
         const mBytes = std.mem.sliceAsBytes(memoryCopy.items);
 
-        var rBytes = try std.ArrayList(u8).initCapacity(self.allocator, size);
+        var rBytes = try std.ArrayList(u8).initCapacity(allocator, size);
         errdefer rBytes.deinit();
         for (0..size) |i| {
             try rBytes.insert(i, mBytes[offset + i]);
@@ -63,7 +61,7 @@ fn testRead(
     for (memory) |b| {
         try mem.write(b);
     }
-    const rBytes = try mem.read(offset, size);
+    const rBytes = try mem.read(allocator, offset, size);
     defer allocator.free(rBytes);
     try std.testing.expectEqualSlices(u8, expected, rBytes);
 }
