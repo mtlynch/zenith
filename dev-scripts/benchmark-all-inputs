@@ -18,7 +18,7 @@ readonly BYTECODE_EXTENSION='.bytecode'
 readonly BENCHMARK_FOLDER='benchmarks'
 readonly BENCHMARK_EXTENSION='.benchmark'
 
-pushd "${TESTDATA_FOLDER}"
+cd "${TESTDATA_FOLDER}"
 
 test_files=()
 for file in *; do
@@ -29,14 +29,12 @@ for file in *; do
   fi
 done
 
-popd
-
-echo $test_files
+cd ..
 
 readonly VM_BINARY_BASENAME="$(basename "${VM_BINARY}")"
 
 for test_name in "${test_files[@]}"; do
-  echo "Running benchmarks for ${test_name}"
+  echo "Running benchmarks for ${test_name} (${ITERATIONS} iterations)"
   for i in $(seq 1 "${ITERATIONS}"); do
     ./dev-scripts/benchmark-single-input "${VM_BINARY}" \
         "${TESTDATA_FOLDER}/${test_name}${BYTECODE_EXTENSION}" \
