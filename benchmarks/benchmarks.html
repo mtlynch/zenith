@@ -17,12 +17,12 @@
       <h1>Benchmarks</h1>
       <h2>Return Single-Byte Value</h2>
       <div class="chart-container">
-        <canvas id="single-byte"></canvas>
+        <canvas id="return-single-byte"></canvas>
       </div>
 
       <h2>Return 32-Byte Value</h2>
       <div class="chart-container">
-        <canvas id="32-byte"></canvas>
+        <canvas id="return-32-byte"></canvas>
       </div>
 
       <h2>Count to 1000 by 1</h2>
@@ -99,8 +99,8 @@
         });
         }
 
-        for (const graphId of ["single-byte", "32-byte", "count-to-1000-by-1"]) {
-          populateGraph(graphId);
+        for (const canvas of document.querySelectorAll("canvas")) {
+          populateGraph(canvas.id);
         }
       </script>
     </main>

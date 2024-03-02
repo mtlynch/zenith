@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+
+# Exit on first failure.
+set -e
+
+# Exit on unset variable.
+set -u
+
+# Fail when piped commands fail.
+set -o pipefail
+
+readonly VM_BINARY="$1"
+readonly ITERATIONS="$2"
+
+readonly TESTDATA_FOLDER="testdata"
+readonly BYTECODE_EXTENSION='.bytecode'
+
+readonly BENCHMARK_FOLDER='benchmarks'
+readonly BENCHMARK_EXTENSION='.benchmark'
+
+pushd "${TESTDATA_FOLDER}"
+
+test_files=()
+for file in *; do
+  # Check if the file is a regular file
+  if [[ -f "${file}" ]]; then
+      filename="$(basename "${file}" "${BYTECODE_EXTENSION}")"
+      test_files+=("$filename")
+  fi
+done
+
+popd
+
+echo $test_files
+
+readonly VM_BINARY_BASENAME="$(basename "${VM_BINARY}")"
+
+for test_name in "${test_files[@]}"; do
+  echo "Running benchmarks for ${test_name}"
+  for i in $(seq 1 "${ITERATIONS}"); do
+    ./dev-scripts/benchmark-single-input "${VM_BINARY}" \
+        "${TESTDATA_FOLDER}/${test_name}${BYTECODE_EXTENSION}" \
+      | tee --append "${BENCHMARK_FOLDER}/${VM_BINARY_BASENAME}_${test_name}${BENCHMARK_EXTENSION}"
+  done
+done
