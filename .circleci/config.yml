@@ -26,27 +26,14 @@ jobs:
       - run:
           name: Benchmark eth-zvm
           command: |
-            for i in $(seq 1 30);
-            do
-              nix develop --command bash -c 'xxd -r -p < testdata/return-single-byte.bytecode \
-                | zig build run -Doptimize=ReleaseFast' \
-                | grep -oP 'execution time:\s+\K\d+\.\d+' \
-                | tee --append benchmarks/eth-zvm_single-byte.benchmark
-              nix develop --command bash -c 'xxd -r -p < testdata/return-32-byte.bytecode \
-                | zig build run -Doptimize=ReleaseFast' \
-                | grep -oP 'execution time:\s+\K\d+\.\d+' \
-                | tee --append benchmarks/eth-zvm_32-byte.benchmark
-              nix develop --command bash -c 'xxd -r -p < testdata/count-to-1000-by-1.bytecode \
-                | zig build run -Doptimize=ReleaseFast' \
-                | grep -oP 'execution time:\s+\K\d+\.\d+' \
-                | tee --append benchmarks/eth-zvm_count-to-1000-by-1.benchmark
-            done
+            nix develop --command bash -c \
+              'zig build -Doptimize=ReleaseFast --verbose'
+            nix develop --command bash -c \
+              'dev-scripts/benchmark-all-inputs ./zig-out/bin/eth-zvm 30'
       - persist_to_workspace:
           root: ./
           paths:
-            - ./benchmarks/eth-zvm_single-byte.benchmark
-            - ./benchmarks/eth-zvm_32-byte.benchmark
-            - ./benchmarks/eth-zvm_count-to-1000-by-1.benchmark
+            - ./benchmarks/*.benchmark
   benchmark_evm:
     docker:
       - image: cimg/base:2024.01
@@ -59,25 +46,11 @@ jobs:
           command: ./dev-scripts/download-evm
       - run:
           name: Benchmark evm
-          command: |
-            for i in $(seq 1 30);
-            do
-              ./evm run --codefile testdata/return-single-byte.bytecode --statdump \
-                |& grep -oP 'execution time:\s+\K\d+\.\d+' \
-                | tee --append benchmarks/evm_single-byte.benchmark
-              ./evm run --codefile testdata/return-32-byte.bytecode --statdump \
-                |& grep -oP 'execution time:\s+\K\d+\.\d+' \
-                | tee --append benchmarks/evm_32-byte.benchmark
-              ./evm run --codefile testdata/count-to-1000-by-1.bytecode --statdump \
-                |& grep -oP 'execution time:\s+\K\d+\.\d+' \
-                | tee --append benchmarks/evm_count-to-1000-by-1.benchmark
-            done
+          command: dev-scripts/benchmark-all-inputs ./evm 30
       - persist_to_workspace:
           root: ./
           paths:
-            - ./benchmarks/evm_single-byte.benchmark
-            - ./benchmarks/evm_32-byte.benchmark
-            - ./benchmarks/evm_count-to-1000-by-1.benchmark
+            - ./benchmarks/*.benchmark
       - run:
           name: Disassemble bytecode
           command: ./evm disasm testdata/return-single-byte.bytecode

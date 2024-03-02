@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+# Exit on first failure.
+set -e
+
+# Exit on unset variable.
+set -u
+
+# Fail when piped commands fail.
+set -o pipefail
+
+readonly VM_BINARY="$1"
+readonly INPUT_FILE="$2"
+
+readonly OUTPUT_FILE="$(mktemp)"
+
+if [[ $(basename $VM_BINARY) == *evm ]]; then
+  "${VM_BINARY}" run --codefile "${INPUT_FILE}" --statdump \
+    > /dev/null \
+    2> "${OUTPUT_FILE}"
+else
+  xxd -r -p < "${INPUT_FILE}" | "$VM_BINARY" > "${OUTPUT_FILE}"
+fi
+
+grep -oP 'execution time:\s+\K\d+\.\d+' "${OUTPUT_FILE}"
