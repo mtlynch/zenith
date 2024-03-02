@@ -27,7 +27,8 @@ jobs:
           name: Benchmark eth-zvm
           command: |
             nix develop --command bash -c 'zig build run -Doptimize=ReleaseFast'
-            dev-scripts/benchmark-all-inputs ./zig-out/bin/eth-zvm 30
+            nix develop --command bash -c \
+              'dev-scripts/benchmark-all-inputs ./zig-out/bin/eth-zvm 30'
       - persist_to_workspace:
           root: ./
           paths:
