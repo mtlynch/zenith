@@ -8,7 +8,9 @@ pub fn main() !void {
     defer _ = gpa.deinit();
 
     const in = std.io.getStdIn();
-    var reader = std.io.bufferedReader(in.reader());
+    var buf = std.io.bufferedReader(in.reader());
+
+    var reader = buf.reader();
 
     var evm = vm.VM{};
     evm.init(allocator);
