@@ -4,6 +4,7 @@ const stack = @import("stack.zig");
 
 pub const OpCode = enum(u8) {
     ADD = 0x01,
+    MOD = 0x06,
     PUSH1 = 0x60,
     PUSH32 = 0x7f,
     MSTORE = 0x52,
@@ -61,6 +62,19 @@ pub const VM = struct {
                 const c = @addWithOverflow(a, b)[0];
                 try self.stack.push(c);
                 self.gasConsumed += 3;
+                return true;
+            },
+            OpCode.MOD => {
+                std.log.debug("{s}", .{@tagName(op)});
+                self.gasConsumed += 5;
+                const a = try self.stack.pop();
+                const b = try self.stack.pop();
+                if (b == 0) {
+                    try self.stack.push(0);
+                    return true;
+                }
+                const c = @mod(a, b);
+                try self.stack.push(c);
                 return true;
             },
             OpCode.PUSH1 => {
@@ -159,6 +173,38 @@ test "adding one to max u256 should wrap to zero" {
     const expectedReturnValue = [_]u8{};
     const expectedGasConsumed = 9;
     const expectedStack = [_]u256{0x0};
+    const expectedMemory = [_]u256{};
+    try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
+}
+
+test "10 modulus 3 is 1" {
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(OpCode.PUSH1), 0x03,
+        @intFromEnum(OpCode.PUSH1), 0x0a,
+        @intFromEnum(OpCode.MOD),
+    };
+    // zig fmt: on
+
+    const expectedReturnValue = [_]u8{};
+    const expectedGasConsumed = 11;
+    const expectedStack = [_]u256{0x01};
+    const expectedMemory = [_]u256{};
+    try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
+}
+
+test "anything mod 0 is 0" {
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(OpCode.PUSH1), 0x00,
+        @intFromEnum(OpCode.PUSH1), 0x05,
+        @intFromEnum(OpCode.MOD),
+    };
+    // zig fmt: on
+
+    const expectedReturnValue = [_]u8{};
+    const expectedGasConsumed = 11;
+    const expectedStack = [_]u256{0x00};
     const expectedMemory = [_]u256{};
     try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
 }
