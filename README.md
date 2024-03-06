@@ -14,7 +14,9 @@ For now, this is a just-for-fun experiment to learn more about Zig and Ethereum.
 Run with maximum performance:
 
 ```bash
-$ echo '60016000526001601ff3' | xxd -r -p | zig build run -Doptimize=ReleaseFast
+$ INFILE="$(mktemp)" && \
+    echo '60016000526001601ff3' | xxd -r -p > "${INFILE}" && \
+    zig build run -Doptimize=ReleaseFast < "${INFILE}"
 EVM gas used:    18
 execution time:  56.443µs
 0x01
