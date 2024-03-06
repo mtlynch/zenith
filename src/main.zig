@@ -9,7 +9,6 @@ pub fn main() !void {
 
     const in = std.io.getStdIn();
     var buf = std.io.bufferedReader(in.reader());
-
     var reader = buf.reader();
 
     var evm = vm.VM{};
