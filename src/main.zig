@@ -11,13 +11,12 @@ pub fn main() !void {
     var buf = std.io.bufferedReader(in.reader());
     var reader = buf.reader();
 
-    var evm = vm.VM{};
-    evm.init(allocator);
+    var evm = vm.VM(@TypeOf(reader)).init(allocator, reader);
     defer evm.deinit();
 
     var timer = try std.time.Timer.start();
     const start = timer.lap();
-    try evm.run(&reader);
+    try evm.run();
     const end = timer.read();
     const elapsed_micros = @as(f64, @floatFromInt(end - start)) / std.time.ns_per_us;
 
