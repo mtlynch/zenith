@@ -3,7 +3,7 @@ const stack = @import("stack.zig");
 const vm = @import("vm.zig");
 
 pub fn main() !void {
-    var buffer: [2000]u8 = undefined;
+    comptime var buffer: [2000]u8 = undefined;
     var fba = std.heap.FixedBufferAllocator.init(&buffer);
     const allocator = fba.allocator();
 
