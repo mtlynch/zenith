@@ -10,8 +10,15 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-
     b.installArtifact(exe);
+
+    const mnemonic_exe = b.addExecutable(.{
+        .name = "mnemonic-compiler",
+        .root_source_file = .{ .path = "src/mnemonic-compiler/main.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
+    b.installArtifact(mnemonic_exe);
 
     const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());
