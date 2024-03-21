@@ -22,7 +22,6 @@
           zig_dep.xxd
           zig_dep.zig
           zls_dep.zls
-          zls_dep.strace
         ];
 
         shellHook = ''
