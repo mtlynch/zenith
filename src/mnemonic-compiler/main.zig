@@ -17,4 +17,11 @@ pub fn main() !void {
     for (keywords.kvs) |kv| {
         try output.print("{s} = 0x{x:0>2}\n", .{ kv.key, @intFromEnum(kv.value) });
     }
+
+    const words = [_][]const u8{ "PUSH1", "0x01", "PUSH1", "0x00", "MSTORE", "PUSH1", "0x20", "PUSH1", "0x00", "RETURN" };
+    for (words) |word| {
+        const val = keywords.get(word) orelse continue;
+        //try output.print("{s} is keyword? {any}", .{ word, keywords.has(word) });
+        try output.print("{s} has value? 0x{x:0>2}\n", .{ word, @intFromEnum(val) });
+    }
 }
