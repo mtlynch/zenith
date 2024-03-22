@@ -18,6 +18,12 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+
+    const vm_module = b.createModule(.{
+        .source_file = .{ .path = "src/vm.zig" },
+    });
+
+    mnemonic_exe.addModule("vm", vm_module);
     b.installArtifact(mnemonic_exe);
 
     const run_cmd = b.addRunArtifact(exe);
