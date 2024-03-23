@@ -70,7 +70,6 @@ if [[ -f "${FILENAME}" ]]; then
   rm "${FILENAME}"
 fi
 
-rm "${FILENAME}" || true
 touch "${FILENAME}"
 
 echo "PUSH1 0x01" >> "${FILENAME}"
