@@ -55,3 +55,49 @@ test "tokenize a single word" {
 
     try testTokenize(input, &expectedTokens);
 }
+
+test "tokenize a multi-word line" {
+    const input = "PUSH1 0x01";
+
+    const expectedTokens = [_][:0]const u8{ "PUSH1", "0x01" };
+
+    try testTokenize(input, &expectedTokens);
+}
+
+test "tokenize a multi-line input" {
+    const input =
+        \\PUSH1 0x01
+        \\RETURN
+    ;
+
+    const expectedTokens = [_][:0]const u8{ "PUSH1", "0x01", "RETURN" };
+
+    try testTokenize(input, &expectedTokens);
+}
+
+test "ignores lines starting with //" {
+    const input =
+        \\// Don't mind me; I'm just a comment
+        \\PUSH1 0x01
+        \\// This is where we return
+        \\RETURN
+    ;
+
+    const expectedTokens = [_][:0]const u8{ "PUSH1", "0x01", "RETURN" };
+
+    try testTokenize(input, &expectedTokens);
+}
+
+test "treats multiple spaces the same as a single space" {
+    const input =
+        \\PUSH1             0x01
+        \\
+        \\
+        \\RETURN
+        \\
+    ;
+
+    const expectedTokens = [_][:0]const u8{ "PUSH1", "0x01", "RETURN" };
+
+    try testTokenize(input, &expectedTokens);
+}
