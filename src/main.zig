@@ -7,9 +7,11 @@ pub fn main() !void {
     const allocator = gpa.allocator();
     defer _ = gpa.deinit();
 
-    const in = std.io.getStdIn();
-    var buf = std.io.bufferedReader(in.reader());
-    var reader = buf.reader();
+    const bytecode = try readStdin(allocator);
+    defer allocator.free(bytecode);
+
+    var stream = std.io.fixedBufferStream(bytecode);
+    var reader = stream.reader();
 
     var evm = vm.VM{};
     evm.init(allocator);
@@ -30,6 +32,16 @@ pub fn main() !void {
         // Match evm behavior by outputting a blank line when there is no return value.
         try output.print("\n", .{});
     }
+}
+
+pub fn readStdin(allocator: std.mem.Allocator) ![]u8 {
+    var stdin = std.io.getStdIn().reader();
+    var buffer = std.ArrayList(u8).init(allocator);
+    defer buffer.deinit();
+
+    try stdin.readAllArrayList(&buffer, std.math.maxInt(usize));
+
+    return buffer.toOwnedSlice();
 }
 
 test {
