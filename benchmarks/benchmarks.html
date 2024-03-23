@@ -43,6 +43,29 @@
             return sorted[middle];
         }
 
+        function parseMeasurement(val) {
+          const regex = /^(\d+(?:\.\d+)?)(s|ms|µs)$/;
+          const match = value.match(regex);
+
+          if (!match) {
+            return null;
+          }
+
+          const [,numericalValue, unit] = match;
+
+          parsed = parseFloat(numericalValue);
+
+          if (unit === "µs") {
+            return parsed;
+          } else if (unit === "ms") {
+            return parsed * 1000;
+          } else if (unit === "s") {
+            return parsed * 1000 * 1000;
+          } else {
+            throw Error("unexpected unit");
+          }
+        }
+
         function getBenchmarks(filename) {
           return fetch(filename)
             .then((response) => response.text())
@@ -50,7 +73,7 @@
               data
                 .split("\n")
                 .filter((x) => x)
-                .map((x) => parseFloat(x)),
+                .map((x) => parseMeasurement(x)),
             );
         }
 
