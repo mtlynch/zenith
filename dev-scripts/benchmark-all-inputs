@@ -35,9 +35,13 @@ readonly VM_BINARY_BASENAME="$(basename "${VM_BINARY}")"
 
 for test_name in "${test_files[@]}"; do
   echo "Running benchmarks for ${test_name} (${ITERATIONS} iterations)"
+  OUTPUT_FILE="${BENCHMARK_FOLDER}/${VM_BINARY_BASENAME}_${test_name}${BENCHMARK_EXTENSION}"
+  if [[ -f "${OUTPUT_FILE}" ]]; then
+    rm "${OUTPUT_FILE}"
+  fi
   for i in $(seq 1 "${ITERATIONS}"); do
     ./dev-scripts/benchmark-single-input "${VM_BINARY}" \
         "${TESTDATA_FOLDER}/${test_name}${BYTECODE_EXTENSION}" \
-      | tee --append "${BENCHMARK_FOLDER}/${VM_BINARY_BASENAME}_${test_name}${BENCHMARK_EXTENSION}"
+      | tee --append "${OUTPUT_FILE}"
   done
 done
