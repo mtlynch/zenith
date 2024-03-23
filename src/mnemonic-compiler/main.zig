@@ -6,7 +6,7 @@ pub fn main() !void {
         const KV = struct { []const u8, vm.OpCode };
         var kvs_array: [std.meta.fields(vm.OpCode).len]KV = undefined;
         for (std.meta.fields(vm.OpCode), 0..) |enumField, i| {
-            kvs_array[i] = .{ enumField.name, @field(vm.OpCode, enumField.name) };
+            kvs_array[i] = .{ enumField.name, @enumFromInt(enumField.value) };
         }
         break :build_kvs kvs_array;
     };
