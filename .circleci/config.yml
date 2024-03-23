@@ -13,6 +13,23 @@ jobs:
       - run:
           name: Run unit tests
           command: nix develop --command zig build test --summary all
+  compile_test_cases:
+    docker:
+      - image: nixos/nix:2.15.0
+    steps:
+      - run:
+          name: Enable Nix flakes
+          command: echo 'experimental-features = nix-command flakes' >> /etc/nix/nix.conf
+      - checkout
+      - attach_workspace:
+          at: ./
+      - run:
+          name: Compile test cases
+          command: nix develop --command ./dev-scripts/compile-testcases
+      - persist_to_workspace:
+          root: ./
+          paths:
+            - ./tesdata/bytecode/*.bytecode
   benchmark:
     docker:
       - image: nixos/nix:2.15.0
@@ -65,8 +82,13 @@ workflows:
   test-deploy:
     jobs:
       - run_unit_tests
-      - benchmark
-      - benchmark_evm
+      - compile_test_cases
+      - benchmark:
+          requires:
+            - compile_test_cases
+      - benchmark_evm:
+          requires:
+            - compile_test_cases
       - make_benchmark_graph:
           requires:
             - benchmark
