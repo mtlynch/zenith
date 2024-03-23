@@ -23,11 +23,7 @@ else
   INPUT_FILE_BINARY="$(mktemp)"
   readonly INPUT_FILE_BINARY
 
-  # We can't pipeline directly from xxd into the binary, as it throws off our
-  # measurements.
-  # https://ziggit.dev/t/zig-build-run-is-10x-faster-than-compiled-binary/3446?u=mtlynch
-  xxd -r -p < "${INPUT_FILE}" > "${INPUT_FILE_BINARY}"
-  "$VM_BINARY" < "${INPUT_FILE_BINARY}" > "${OUTPUT_FILE}"
+  xxd -r -p < "${INPUT_FILE}" | "$VM_BINARY" > "${OUTPUT_FILE}"
 fi
 
-grep -oP 'execution time:\s+\K\d+\.\d+' "${OUTPUT_FILE}"
+grep -oP 'execution time:\s+\K\d+\.\d+.s' "${OUTPUT_FILE}"
