@@ -1,8 +1,14 @@
 version: 2.1
-jobs:
-  run_unit_tests:
+executors:
+  base:
+    docker:
+      - image: cimg/base:2024.01
+  nix:
     docker:
       - image: nixos/nix:2.15.0
+jobs:
+  run_unit_tests:
+    executor: nix
     steps:
       - run:
           name: Enable Nix flakes
@@ -14,8 +20,7 @@ jobs:
           name: Run unit tests
           command: nix develop --command zig build test --summary all
   benchmark:
-    docker:
-      - image: nixos/nix:2.15.0
+    executor: nix
     steps:
       - run:
           name: Enable Nix flakes
@@ -35,8 +40,7 @@ jobs:
           paths:
             - ./benchmarks/*.benchmark
   benchmark_evm:
-    docker:
-      - image: cimg/base:2024.01
+    executor: base
     steps:
       - checkout
       - attach_workspace:
@@ -55,8 +59,7 @@ jobs:
           name: Disassemble bytecode
           command: ./evm disasm testdata/return-single-byte.bytecode
   make_benchmark_graph:
-    docker:
-      - image: cimg/base:2024.01
+    executor: base
     steps:
       - checkout
       - attach_workspace:
