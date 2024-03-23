@@ -26,4 +26,4 @@ else
   xxd -r -p < "${INPUT_FILE}" | "$VM_BINARY" > "${OUTPUT_FILE}"
 fi
 
-grep -oP 'execution time:\s+\K\d+\.\d+.s' "${OUTPUT_FILE}"
+grep -oP 'execution time:\s+\K\d+\.\d+.{1,2}s' "${OUTPUT_FILE}"
