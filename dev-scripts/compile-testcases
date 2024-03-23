@@ -13,7 +13,6 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 readonly SCRIPT_DIR
 cd "${SCRIPT_DIR}/.."
 
-
 readonly TESTDATA_FOLDER="testdata"
 
 mkdir -p "${TESTDATA_FOLDER}/bytecode"
@@ -40,9 +39,9 @@ pushd "${GENERATED_TESTS_FOLDER}"
 TEST_NAME="count-to-1k-by-1"
 
 FILENAME="${TEST_NAME}${MNEMONIC_EXTENSION}"
-
-rm "${FILENAME}" || true
-touch "${FILENAME}"
+if [[ -f "${FILENAME}" ]]; then
+  rm "${FILENAME}"
+fi
 
 for ((i=1; i<=1000; i++)); do
     echo "PUSH1 0x01" >> "${FILENAME}"
@@ -60,12 +59,16 @@ PUSH1 0x00
 RETURN
 EOL
 
+
 test_files+=("generated/${TEST_NAME}")
 
 
 TEST_NAME="count-to-100k-by-1"
 
 FILENAME="${TEST_NAME}${MNEMONIC_EXTENSION}"
+if [[ -f "${FILENAME}" ]]; then
+  rm "${FILENAME}"
+fi
 
 rm "${FILENAME}" || true
 touch "${FILENAME}"
