@@ -1,28 +1,6 @@
 const std = @import("std");
 const vm = @import("vm");
-
-fn tokenize(reader: anytype, allocator: std.mem.Allocator) ![][:0]const u8 {
-    var tokens = std.ArrayList([:0]const u8).init(allocator);
-    defer tokens.deinit();
-
-    var buf: [1024]u8 = undefined;
-    while (try reader.readUntilDelimiterOrEof(&buf, '\n')) |line| {
-        // Skip lines that start with "//"
-        if (std.mem.startsWith(u8, line, "//")) {
-            continue;
-        }
-
-        var iter = std.mem.split(u8, line, " ");
-        while (iter.next()) |token| {
-            if (token.len == 0) {
-                continue;
-            }
-            try tokens.append(try allocator.dupeZ(u8, token));
-        }
-    }
-
-    return tokens.toOwnedSlice();
-}
+const tokenizer = @import("tokenizer.zig");
 
 fn parseOpcode(val: [:0]const u8) ?vm.OpCode {
     const kvs = comptime build_kvs: {
@@ -63,10 +41,7 @@ pub fn main() !void {
     const infile = try std.fs.cwd().openFile(infilePath, .{});
     defer infile.close();
 
-    var buf = std.io.bufferedReader(infile.reader());
-    var reader = buf.reader();
-
-    const tokens = try tokenize(reader, allocator);
+    const tokens = try tokenizer.tokenize(infile.reader(), allocator);
     defer {
         for (tokens) |token| {
             allocator.free(token);
@@ -88,4 +63,8 @@ pub fn main() !void {
         }
     }
     try output.print("\n", .{});
+}
+
+test {
+    std.testing.refAllDecls(@This());
 }
