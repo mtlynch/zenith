@@ -51,9 +51,6 @@ jobs:
           root: ./
           paths:
             - ./benchmarks/*.benchmark
-      - run:
-          name: Disassemble bytecode
-          command: ./evm disasm testdata/return-single-byte.bytecode
   make_benchmark_graph:
     docker:
       - image: cimg/base:2024.01

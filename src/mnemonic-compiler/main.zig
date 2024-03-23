@@ -1,24 +1,7 @@
 const std = @import("std");
 const vm = @import("vm");
+const parser = @import("parser.zig");
 const tokenizer = @import("tokenizer.zig");
-
-fn parseOpcode(val: [:0]const u8) ?vm.OpCode {
-    const kvs = comptime build_kvs: {
-        const KV = struct { []const u8, vm.OpCode };
-        var kvs_array: [std.meta.fields(vm.OpCode).len]KV = undefined;
-        for (std.meta.fields(vm.OpCode), 0..) |enumField, i| {
-            kvs_array[i] = .{ enumField.name, @enumFromInt(enumField.value) };
-        }
-        break :build_kvs kvs_array;
-    };
-    const keywords = std.ComptimeStringMap(vm.OpCode, kvs);
-
-    return keywords.get(val);
-}
-
-fn parseValue(val: [:0]const u8) !u32 {
-    return std.fmt.parseInt(u32, val, 0);
-}
 
 fn printByte(writer: anytype, val: u8) !void {
     try writer.print("{x:0>2}", .{val});
@@ -49,20 +32,14 @@ pub fn main() !void {
         allocator.free(tokens);
     }
 
-    const output = std.io.getStdOut().writer();
+    const bytecode = try parser.parseTokens(tokens, allocator);
+    defer allocator.free(bytecode);
 
-    var currentOpCode: vm.OpCode = undefined;
-    for (tokens) |token| {
-        if (parseOpcode(token)) |opcode| {
-            currentOpCode = opcode;
-            try output.print("{x:0>2}", .{@intFromEnum(opcode)});
-        } else {
-            // TODO: Parse value based on opcode.
-            const value = try parseValue(token);
-            try output.print("{x:0>2}", .{value});
-        }
-    }
-    try output.print("\n", .{});
+    const outfilePath = args[2];
+    const outfile = try std.fs.cwd().createFile(outfilePath, .{});
+    defer outfile.close();
+
+    try outfile.writeAll(bytecode);
 }
 
 test {
