@@ -1,0 +1,8 @@
+// Test case to return a 32-byte value.
+
+PUSH1 0x01
+PUSH1 0x00
+MSTORE
+PUSH1 0x20
+PUSH1 0x00
+RETURN
