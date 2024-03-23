@@ -24,6 +24,10 @@ jobs:
       - attach_workspace:
           at: ./
       - run:
+          name: Compile mnc
+          command: nix develop --command bash -c \
+              'zig build -Doptimize=ReleaseSafe --verbose'
+      - run:
           name: Compile test cases
           command: nix develop --command ./dev-scripts/compile-testcases
       - persist_to_workspace:
