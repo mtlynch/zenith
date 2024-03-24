@@ -22,16 +22,22 @@ readonly EVMC_BASE_DIR='third-party/evmc'
 # Clear old headers.
 rm -rf "${EVMC_BASE_DIR}"
 
-readonly HEADER_DIR="${EVMC_BASE_DIR}/${EVMC_VERSION}/evmc"
+readonly EVMC_DIR="${EVMC_BASE_DIR}/${EVMC_VERSION}"
+mkdir -p "${EVMC_DIR}"
+pushd "${EVMC_DIR}"
+readonly BASE_URL="https://raw.githubusercontent.com/ethereum/evmc/${EVMC_VERSION}"
+echo "Downloading LICENSE"
+wget "${BASE_URL}/LICENSE"
 
+readonly HEADER_DIR="./evmc"
 mkdir -p "${HEADER_DIR}"
 pushd "${HEADER_DIR}"
 
-readonly BASE_URL="https://raw.githubusercontent.com/ethereum/evmc/${EVMC_VERSION}/include/evmc/"
+readonly BASE_HEADER_URL="${BASE_URL}/include/evmc/"
 HEADER_FILENAMES=("evmc.h" "helpers.h" "instructions.h" "loader.h" "utils.h")
 
 for HEADER_FILENAME in "${HEADER_FILENAMES[@]}"
 do
   echo "Downloading ${HEADER_FILENAME}"
-  wget "${BASE_URL}${HEADER_FILENAME}"
+  wget "${BASE_HEADER_URL}/${HEADER_FILENAME}"
 done
