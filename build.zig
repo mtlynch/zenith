@@ -29,6 +29,15 @@ pub fn build(b: *std.Build) void {
     mnemonic_exe.addIncludePath(.{ .path = evmc_include_path });
     b.installArtifact(mnemonic_exe);
 
+    const eth_zvm_lib = b.addSharedLibrary(.{
+        .name = "ethzvm",
+        .root_source_file = .{ .path = "src/evmc/main.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
+    eth_zvm_lib.addIncludePath(.{ .path = evmc_include_path });
+    b.installArtifact(eth_zvm_lib);
+
     const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());
 
