@@ -9,16 +9,20 @@ set -u
 # Fail when piped commands fail.
 set -o pipefail
 
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+readonly SCRIPT_DIR
+cd "${SCRIPT_DIR}/.."
+
 readonly VM_BINARY="$1"
 readonly ITERATIONS="$2"
 
-readonly TESTDATA_FOLDER="testdata"
+readonly TESTDATA_FOLDER="testdata/bytecode"
 readonly BYTECODE_EXTENSION='.bytecode'
 
 readonly BENCHMARK_FOLDER='benchmarks'
 readonly BENCHMARK_EXTENSION='.benchmark'
 
-cd "${TESTDATA_FOLDER}"
+pushd "${TESTDATA_FOLDER}" > /dev/null
 
 test_files=()
 for file in *; do
@@ -29,7 +33,7 @@ for file in *; do
   fi
 done
 
-cd ..
+popd > /dev/null
 
 readonly VM_BINARY_BASENAME="$(basename "${VM_BINARY}")"
 

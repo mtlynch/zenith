@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+
+# Exit on first failure.
+set -e
+
+# Exit on unset variable.
+set -u
+
+# Fail when piped commands fail.
+set -o pipefail
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+readonly SCRIPT_DIR
+cd "${SCRIPT_DIR}/.."
+
+readonly TESTDATA_FOLDER="testdata"
+readonly BYTECODE_OUTPUT_FOLDER="${TESTDATA_FOLDER}/bytecode"
+
+mkdir -p "${BYTECODE_OUTPUT_FOLDER}"
+
+readonly MNEMONIC_EXTENSION='.mnemonic'
+
+pushd "${TESTDATA_FOLDER}" > /dev/null
+
+test_files=()
+for file in *; do
+  if [[ -f "${file}" ]]; then
+      filename="$(basename "${file}" "${MNEMONIC_EXTENSION}")"
+      test_files+=("$filename")
+  fi
+done
+
+popd > /dev/null
+
+readonly GENERATED_TESTS_FOLDER="${TESTDATA_FOLDER}/generated"
+mkdir -p "${GENERATED_TESTS_FOLDER}"
+pushd "${GENERATED_TESTS_FOLDER}" > /dev/null
+
+make_count_to_1k_test() {
+  local TEST_NAME="count-to-1k-by-1"
+  readonly TEST_NAME
+
+  echo "generating test: ${TEST_NAME}"
+
+  local FILENAME="${TEST_NAME}${MNEMONIC_EXTENSION}"
+  readonly FILENAME
+  if [[ -f "${FILENAME}" ]]; then
+    rm "${FILENAME}"
+  fi
+
+  # Get near the limit of the stack depth.
+  for ((i=1; i<=1000; i++)); do
+      echo "PUSH1 0x01" >> "${FILENAME}"
+  done
+
+  for ((i=1; i<=999; i++)); do
+      echo "ADD" >> "${FILENAME}"
+  done
+
+  cat >> "${FILENAME}" << EOL
+PUSH1 0x00
+MSTORE
+PUSH1 0x20
+PUSH1 0x00
+RETURN
+EOL
+
+  test_files+=("generated/${TEST_NAME}")
+}
+make_count_to_1k_test
+
+make_count_to_100k_test() {
+  local TEST_NAME="count-to-100k-by-1"
+  readonly TEST_NAME
+
+  echo "generating test: ${TEST_NAME}"
+
+  local FILENAME="${TEST_NAME}${MNEMONIC_EXTENSION}"
+  readonly FILENAME
+  if [[ -f "${FILENAME}" ]]; then
+    rm "${FILENAME}"
+  fi
+
+  # The stack is limited to 1024 elements, so get to 100k by pushing and adding
+  # to limit the stack.
+  echo "PUSH1 0x01" >> "${FILENAME}"
+  for ((i=1; i<=99999; i++)); do
+      echo "PUSH1 0x01" >> "${FILENAME}"
+      echo "ADD" >> "${FILENAME}"
+  done
+
+  cat >> "${FILENAME}" << EOL
+PUSH1 0x00
+MSTORE
+PUSH1 0x20
+PUSH1 0x00
+RETURN
+EOL
+
+  test_files+=("generated/${TEST_NAME}")
+}
+make_count_to_100k_test
+
+popd > /dev/null
+
+readonly BYTECODE_EXTENSION='.bytecode'
+
+for test_name in "${test_files[@]}"; do
+  input_file="${TESTDATA_FOLDER}/${test_name}${MNEMONIC_EXTENSION}"
+  output_file="${BYTECODE_OUTPUT_FOLDER}/$(basename "${test_name}")${BYTECODE_EXTENSION}"
+  echo "compiling ${input_file} -> ${output_file}"
+  ./zig-out/bin/mnc "${input_file}" "${output_file}"
+done
