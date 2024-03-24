@@ -10,6 +10,8 @@ pub fn parseTokens(tokens: []const [:0]const u8, allocator: std.mem.Allocator) !
     var bytecode = std.ArrayList(u8).init(allocator);
     defer bytecode.deinit();
 
+    // We don't parse very rigorously. We assume well-formed input. We generate
+    // bytecode even when the token sequences are invalid (e.g., PUSH1 0x1 0x2).
     var currentOpCode: vm.OpCode = undefined;
     for (tokens) |token| {
         if (parseOpcode(token)) |opcode| {
@@ -31,7 +33,6 @@ pub fn parseTokens(tokens: []const [:0]const u8, allocator: std.mem.Allocator) !
 
                     try bytecode.appendSlice(&bytes);
                 },
-
                 else => {
                     return ParserError.UnexpectedToken;
                 },
@@ -43,15 +44,15 @@ pub fn parseTokens(tokens: []const [:0]const u8, allocator: std.mem.Allocator) !
 }
 
 fn parseOpcode(val: [:0]const u8) ?vm.OpCode {
-    const kvs = comptime build_kvs: {
+    // Reverse OpCode enums into a map of int values to enums.
+    const keywords = std.ComptimeStringMap(vm.OpCode, comptime build_kvs: {
         const KV = struct { []const u8, vm.OpCode };
         var kvs_array: [std.meta.fields(vm.OpCode).len]KV = undefined;
         for (std.meta.fields(vm.OpCode), 0..) |enumField, i| {
             kvs_array[i] = .{ enumField.name, @enumFromInt(enumField.value) };
         }
         break :build_kvs kvs_array;
-    };
-    const keywords = std.ComptimeStringMap(vm.OpCode, kvs);
+    });
 
     return keywords.get(val);
 }
