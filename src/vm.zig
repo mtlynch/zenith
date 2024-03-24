@@ -1,17 +1,7 @@
 const std = @import("std");
+const evm = @import("evm");
 const memory = @import("memory.zig");
 const stack = @import("stack.zig");
-
-pub const OpCode = enum(u8) {
-    ADD = 0x01,
-    MOD = 0x06,
-    PUSH1 = 0x60,
-    PUSH32 = 0x7f,
-    MSTORE = 0x52,
-    PC = 0x58,
-    RETURN = 0xf3,
-    _,
-};
 
 pub const VMError = error{
     NotImplemented,
@@ -49,7 +39,7 @@ pub const VM = struct {
 
         const reader = stream.reader();
 
-        const op: OpCode = reader.readEnum(OpCode, byteOrder) catch |err| switch (err) {
+        const op: evm.OpCode = reader.readEnum(evm.OpCode, byteOrder) catch |err| switch (err) {
             error.EndOfStream => {
                 return false;
             },
@@ -58,7 +48,7 @@ pub const VM = struct {
             },
         };
         switch (op) {
-            OpCode.ADD => {
+            evm.OpCode.ADD => {
                 std.log.debug("{s}", .{
                     @tagName(op),
                 });
@@ -69,7 +59,7 @@ pub const VM = struct {
                 self.gasConsumed += 3;
                 return true;
             },
-            OpCode.MOD => {
+            evm.OpCode.MOD => {
                 std.log.debug("{s}", .{@tagName(op)});
                 self.gasConsumed += 5;
                 const a = try self.stack.pop();
@@ -82,21 +72,21 @@ pub const VM = struct {
                 try self.stack.push(c);
                 return true;
             },
-            OpCode.PUSH1 => {
+            evm.OpCode.PUSH1 => {
                 const b = try reader.readByte();
                 std.log.debug("{s} 0x{x:0>2}", .{ @tagName(op), b });
                 try self.stack.push(b);
                 self.gasConsumed += 3;
                 return true;
             },
-            OpCode.PUSH32 => {
+            evm.OpCode.PUSH32 => {
                 const b = try reader.readIntBig(u256);
                 std.log.debug("{s} 0x{x:0>32}", .{ @tagName(op), b });
                 try self.stack.push(b);
                 self.gasConsumed += 3;
                 return true;
             },
-            OpCode.MSTORE => {
+            evm.OpCode.MSTORE => {
                 std.log.debug("{s}", .{@tagName(op)});
                 const offset = try self.stack.pop();
                 const value = try self.stack.pop();
@@ -113,7 +103,7 @@ pub const VM = struct {
                 self.gasConsumed += @as(u64, newState - oldState);
                 return true;
             },
-            OpCode.PC => {
+            evm.OpCode.PC => {
                 std.log.debug("{s}", .{@tagName(op)});
 
                 const pos = try stream.getPos();
@@ -122,7 +112,7 @@ pub const VM = struct {
 
                 return true;
             },
-            OpCode.RETURN => {
+            evm.OpCode.RETURN => {
                 std.log.debug("{s}", .{@tagName(op)});
                 const offset256 = try self.stack.pop();
                 const size256 = try self.stack.pop();
@@ -147,24 +137,24 @@ pub const VM = struct {
 fn testBytecode(bytecode: []const u8, expectedReturnValue: []const u8, expectedGasConsumed: u64, expectedStack: []const u256, expectedMemory: []const u256) !void {
     const allocator = std.testing.allocator;
 
-    var evm = VM{};
-    evm.init(allocator);
-    defer evm.deinit();
+    var vm = VM{};
+    vm.init(allocator);
+    defer vm.deinit();
 
-    try evm.run(bytecode);
+    try vm.run(bytecode);
 
-    try std.testing.expectEqualSlices(u8, expectedReturnValue, evm.returnValue);
-    try std.testing.expectEqual(expectedGasConsumed, evm.gasConsumed);
-    try std.testing.expectEqualSlices(u256, expectedStack, evm.stack.slice());
-    try std.testing.expectEqualSlices(u256, expectedMemory, evm.memory.slice());
+    try std.testing.expectEqualSlices(u8, expectedReturnValue, vm.returnValue);
+    try std.testing.expectEqual(expectedGasConsumed, vm.gasConsumed);
+    try std.testing.expectEqualSlices(u256, expectedStack, vm.stack.slice());
+    try std.testing.expectEqualSlices(u256, expectedMemory, vm.memory.slice());
 }
 
 test "add two bytes" {
     // zig fmt: off
     const bytecode = [_]u8{
-        @intFromEnum(OpCode.PUSH1), 0x03,
-        @intFromEnum(OpCode.PUSH1), 0x02,
-        @intFromEnum(OpCode.ADD),
+        @intFromEnum(evm.OpCode.PUSH1), 0x03,
+        @intFromEnum(evm.OpCode.PUSH1), 0x02,
+        @intFromEnum(evm.OpCode.ADD),
     };
     // zig fmt: on
 
@@ -175,9 +165,9 @@ test "add two bytes" {
 test "adding one to max u256 should wrap to zero" {
     // zig fmt: off
     const bytecode = [_]u8{
-        @intFromEnum(OpCode.PUSH32),  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-        @intFromEnum(OpCode.PUSH1), 0x01,
-        @intFromEnum(OpCode.ADD),
+        @intFromEnum(evm.OpCode.PUSH32),  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        @intFromEnum(evm.OpCode.PUSH1), 0x01,
+        @intFromEnum(evm.OpCode.ADD),
     };
     // zig fmt: on
 
@@ -191,9 +181,9 @@ test "adding one to max u256 should wrap to zero" {
 test "10 modulus 3 is 1" {
     // zig fmt: off
     const bytecode = [_]u8{
-        @intFromEnum(OpCode.PUSH1), 0x03,
-        @intFromEnum(OpCode.PUSH1), 0x0a,
-        @intFromEnum(OpCode.MOD),
+        @intFromEnum(evm.OpCode.PUSH1), 0x03,
+        @intFromEnum(evm.OpCode.PUSH1), 0x0a,
+        @intFromEnum(evm.OpCode.MOD),
     };
     // zig fmt: on
 
@@ -207,9 +197,9 @@ test "10 modulus 3 is 1" {
 test "anything mod 0 is 0" {
     // zig fmt: off
     const bytecode = [_]u8{
-        @intFromEnum(OpCode.PUSH1), 0x00,
-        @intFromEnum(OpCode.PUSH1), 0x05,
-        @intFromEnum(OpCode.MOD),
+        @intFromEnum(evm.OpCode.PUSH1), 0x00,
+        @intFromEnum(evm.OpCode.PUSH1), 0x05,
+        @intFromEnum(evm.OpCode.MOD),
     };
     // zig fmt: on
 
@@ -223,12 +213,12 @@ test "anything mod 0 is 0" {
 test "return single-byte value" {
     // zig fmt: off
     const bytecode = [_]u8{
-        @intFromEnum(OpCode.PUSH1), 0x01,
-        @intFromEnum(OpCode.PUSH1), 0x00,
-        @intFromEnum(OpCode.MSTORE),
-        @intFromEnum(OpCode.PUSH1), 0x01,
-        @intFromEnum(OpCode.PUSH1), 0x1f,
-        @intFromEnum(OpCode.RETURN),
+        @intFromEnum(evm.OpCode.PUSH1), 0x01,
+        @intFromEnum(evm.OpCode.PUSH1), 0x00,
+        @intFromEnum(evm.OpCode.MSTORE),
+        @intFromEnum(evm.OpCode.PUSH1), 0x01,
+        @intFromEnum(evm.OpCode.PUSH1), 0x1f,
+        @intFromEnum(evm.OpCode.RETURN),
     };
     // zig fmt: on
 
@@ -242,12 +232,12 @@ test "return single-byte value" {
 test "return 32-byte value" {
     // zig fmt: off
     const bytecode = [_]u8{
-        @intFromEnum(OpCode.PUSH1), 0x01,
-        @intFromEnum(OpCode.PUSH1), 0x00,
-        @intFromEnum(OpCode.MSTORE),
-        @intFromEnum(OpCode.PUSH1), 0x20,
-        @intFromEnum(OpCode.PUSH1), 0x00,
-        @intFromEnum(OpCode.RETURN),
+        @intFromEnum(evm.OpCode.PUSH1), 0x01,
+        @intFromEnum(evm.OpCode.PUSH1), 0x00,
+        @intFromEnum(evm.OpCode.MSTORE),
+        @intFromEnum(evm.OpCode.PUSH1), 0x20,
+        @intFromEnum(evm.OpCode.PUSH1), 0x00,
+        @intFromEnum(evm.OpCode.RETURN),
     };
     // zig fmt: on
 
@@ -266,12 +256,12 @@ test "return 32-byte value" {
 test "use push32 and return a single byte" {
     // zig fmt: off
     const bytecode = [_]u8{
-        @intFromEnum(OpCode.PUSH32), 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        @intFromEnum(OpCode.PUSH1), 0x00,
-        @intFromEnum(OpCode.MSTORE),
-        @intFromEnum(OpCode.PUSH1), 0x01,
-        @intFromEnum(OpCode.PUSH1), 0x00,
-        @intFromEnum(OpCode.RETURN),
+        @intFromEnum(evm.OpCode.PUSH32), 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        @intFromEnum(evm.OpCode.PUSH1), 0x00,
+        @intFromEnum(evm.OpCode.MSTORE),
+        @intFromEnum(evm.OpCode.PUSH1), 0x01,
+        @intFromEnum(evm.OpCode.PUSH1), 0x00,
+        @intFromEnum(evm.OpCode.RETURN),
     };
     // zig fmt: on
 
@@ -285,12 +275,12 @@ test "use push32 and return a single byte" {
 test "use pc to measure program counter" {
     // zig fmt: off
     const bytecode = [_]u8{
-        @intFromEnum(OpCode.PC),
-        @intFromEnum(OpCode.PC),
-        @intFromEnum(OpCode.PUSH1), 0xaa,
-        @intFromEnum(OpCode.PC),
-        @intFromEnum(OpCode.PUSH32), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xbb,
-        @intFromEnum(OpCode.PC),
+        @intFromEnum(evm.OpCode.PC),
+        @intFromEnum(evm.OpCode.PC),
+        @intFromEnum(evm.OpCode.PUSH1), 0xaa,
+        @intFromEnum(evm.OpCode.PC),
+        @intFromEnum(evm.OpCode.PUSH32), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xbb,
+        @intFromEnum(evm.OpCode.PC),
     };
     // zig fmt: on
 
