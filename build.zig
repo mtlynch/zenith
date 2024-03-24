@@ -7,6 +7,7 @@ pub fn build(b: *std.Build) void {
     const evm_module = b.createModule(.{
         .source_file = .{ .path = "src/evm/opcodes.zig" },
     });
+    evm_module.addIncludePath(.{ .path = "third-party/evmc/v11.0.1" });
 
     const exe = b.addExecutable(.{
         .name = "eth-zvm",
