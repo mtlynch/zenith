@@ -85,8 +85,10 @@ jobs:
       - attach_workspace:
           at: ./
       - run:
-          name: Benchmark evm
-          command: dev-scripts/benchmark-all-inputs evm 30
+          name: Benchmark besu evm
+          command: |
+            alias besu-evm='evm' && \
+              dev-scripts/benchmark-all-inputs besu-evm 30
       - persist_to_workspace:
           root: ./
           paths:
