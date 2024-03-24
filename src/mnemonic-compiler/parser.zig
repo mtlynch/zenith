@@ -1,5 +1,5 @@
 const std = @import("std");
-const vm = @import("vm");
+const evm = @import("evm");
 const builtin = @import("builtin");
 
 pub const ParserError = error{
@@ -12,18 +12,18 @@ pub fn parseTokens(tokens: []const [:0]const u8, allocator: std.mem.Allocator) !
 
     // We don't parse very rigorously. We assume well-formed input. We generate
     // bytecode even when the token sequences are invalid (e.g., PUSH1 0x1 0x2).
-    var currentOpCode: vm.OpCode = undefined;
+    var currentOpCode: evm.OpCode = undefined;
     for (tokens) |token| {
         if (parseOpcode(token)) |opcode| {
             currentOpCode = opcode;
             try bytecode.append(@intFromEnum(opcode));
         } else {
             switch (currentOpCode) {
-                vm.OpCode.PUSH1 => {
+                evm.OpCode.PUSH1 => {
                     const value = try parseValue(u8, token);
                     try bytecode.append(value);
                 },
-                vm.OpCode.PUSH32 => {
+                evm.OpCode.PUSH32 => {
                     const value = try parseValue(u256, token);
                     var bytes = std.mem.toBytes(value);
                     if (isSystemLittleEndian()) {
@@ -43,12 +43,12 @@ pub fn parseTokens(tokens: []const [:0]const u8, allocator: std.mem.Allocator) !
     return bytecode.toOwnedSlice();
 }
 
-fn parseOpcode(val: [:0]const u8) ?vm.OpCode {
+fn parseOpcode(val: [:0]const u8) ?evm.OpCode {
     // Reverse OpCode enums into a map of int values to enums.
-    const keywords = std.ComptimeStringMap(vm.OpCode, comptime build_kvs: {
-        const KV = struct { []const u8, vm.OpCode };
-        var kvs_array: [std.meta.fields(vm.OpCode).len]KV = undefined;
-        for (std.meta.fields(vm.OpCode), 0..) |enumField, i| {
+    const keywords = std.ComptimeStringMap(evm.Opcode, comptime build_kvs: {
+        const KV = struct { []const u8, evm.OpCode };
+        var kvs_array: [std.meta.fields(evm.Opcode).len]KV = undefined;
+        for (std.meta.fields(evm.Opcode), 0..) |enumField, i| {
             kvs_array[i] = .{ enumField.name, @enumFromInt(enumField.value) };
         }
         break :build_kvs kvs_array;
@@ -76,21 +76,21 @@ fn testParseTokens(tokens: []const [:0]const u8, bytecodeExpected: []const u8) !
 
 test "parse single token" {
     const tokens = [_][:0]const u8{"RETURN"};
-    const expected = [_]u8{@intFromEnum(vm.OpCode.RETURN)};
+    const expected = [_]u8{@intFromEnum(evm.Opcode.RETURN)};
 
     try testParseTokens(&tokens, &expected);
 }
 
 test "parse PUSH1 call as hex" {
     const tokens = [_][:0]const u8{ "PUSH1", "0x01" };
-    const expected = [_]u8{ @intFromEnum(vm.OpCode.PUSH1), 0x01 };
+    const expected = [_]u8{ @intFromEnum(evm.Opcode.PUSH1), 0x01 };
 
     try testParseTokens(&tokens, &expected);
 }
 
 test "parse PUSH1 call as decimal" {
     const tokens = [_][:0]const u8{ "PUSH1", "1" };
-    const expected = [_]u8{ @intFromEnum(vm.OpCode.PUSH1), 0x01 };
+    const expected = [_]u8{ @intFromEnum(evm.Opcode.PUSH1), 0x01 };
 
     try testParseTokens(&tokens, &expected);
 }
@@ -98,7 +98,7 @@ test "parse PUSH1 call as decimal" {
 test "parse PUSH32 call" {
     const tokens = [_][:0]const u8{ "PUSH32", "0x01" };
     // zig fmt: off
-    const expected = [_]u8{ @intFromEnum(vm.OpCode.PUSH32), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, };
+    const expected = [_]u8{ @intFromEnum(evm.OpCode.PUSH32), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, };
     // zig fmt: on
 
     try testParseTokens(&tokens, &expected);
@@ -115,12 +115,12 @@ test "parse simple program" {
       "RETURN"
       };
     const expected = [_]u8{
-        @intFromEnum(vm.OpCode.PUSH1), 0x01,
-        @intFromEnum(vm.OpCode.PUSH1), 0x00,
-        @intFromEnum(vm.OpCode.MSTORE),
-        @intFromEnum(vm.OpCode.PUSH1), 0x01,
-        @intFromEnum(vm.OpCode.PUSH1), 0x1f,
-        @intFromEnum(vm.OpCode.RETURN),
+        @intFromEnum(evm.OpCode.PUSH1), 0x01,
+        @intFromEnum(evm.OpCode.PUSH1), 0x00,
+        @intFromEnum(evm.OpCode.MSTORE),
+        @intFromEnum(evm.OpCode.PUSH1), 0x01,
+        @intFromEnum(evm.OpCode.PUSH1), 0x1f,
+        @intFromEnum(evm.OpCode.RETURN),
     };
     // zig fmt: on
 
