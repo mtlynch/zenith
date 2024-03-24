@@ -5,6 +5,14 @@
 
 An implementation of the Ethereum virtual machine in pure Zig.
 
+## Project status
+
+- [x] Execute basic EVM bytecode
+- [ ] Support [EVMC interface](https://github.com/ethereum/evmc)
+- [ ] Support all Ethereum opcodes ([7 of 144](src/evm/opcodes.zig))
+- [ ] Support precompiled contracts
+- [ ] Run [official Ethereum tests](https://github.com/ethereum/tests)
+
 ## Scope
 
 For now, this is a just-for-fun experiment to learn more about Zig and Ethereum.
