@@ -32,10 +32,10 @@ jobs:
     executor: nix
     steps:
       - run:
-        name: Set up Cachix
-        command: |
-          nix-env -iA cachix -f https://cachix.org/api/v1/install
-          cachix use "${CACHIX_NAME}"
+          name: Set up Cachix
+          command: |
+            nix-env -iA cachix -f https://cachix.org/api/v1/install
+            cachix use "${CACHIX_NAME}"
       - run:
           name: Enable Nix flakes
           command: echo 'experimental-features = nix-command flakes' >> /etc/nix/nix.conf
@@ -59,10 +59,10 @@ jobs:
     executor: nix
     steps:
       - run:
-        name: Set up Cachix
-        command: |
-          nix-env -iA cachix -f https://cachix.org/api/v1/install
-          cachix use "${CACHIX_NAME}"
+          name: Set up Cachix
+          command: |
+            nix-env -iA cachix -f https://cachix.org/api/v1/install
+            cachix use "${CACHIX_NAME}"
       - run:
           name: Enable Nix flakes
           command: echo 'experimental-features = nix-command flakes' >> /etc/nix/nix.conf
