@@ -4,6 +4,10 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    const evm_module = b.createModule(.{
+        .source_file = .{ .path = "src/vm.zig" },
+    });
+
     const exe = b.addExecutable(.{
         .name = "eth-zvm",
         .root_source_file = .{ .path = "src/main.zig" },
@@ -18,12 +22,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-
-    const vm_module = b.createModule(.{
-        .source_file = .{ .path = "src/vm.zig" },
-    });
-
-    mnemonic_exe.addModule("vm", vm_module);
+    mnemonic_exe.addModule("evm", evm_module);
     b.installArtifact(mnemonic_exe);
 
     const run_cmd = b.addRunArtifact(exe);
@@ -49,7 +48,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-    mnc_unit_tests.addModule("vm", vm_module);
+    mnc_unit_tests.addModule("evm", evm_module);
 
     const run_mnc_unit_tests = b.addRunArtifact(mnc_unit_tests);
 
