@@ -17,13 +17,14 @@ readonly OUTPUT_FILE
 
 if [[ $(basename $VM_BINARY) == besu-evm ]]; then
   "${VM_BINARY}" --code="$(cat "${INPUT_FILE}")" > "${OUTPUT_FILE}"
-  grep -oP '"timens":\K\d+' "${OUTPUT_FILE}"
+  grep --only-matching --perl-regexp '"timens":\K\d+' "${OUTPUT_FILE}"
   exit 0
 elif [[ $(basename $VM_BINARY) == *evm ]]; then
   "${VM_BINARY}" run --codefile "${INPUT_FILE}" --statdump \
     > /dev/null \
     2> "${OUTPUT_FILE}"
-  grep -oP 'execution time:\s+\K\d+\.\d+.{1,2}s' "${OUTPUT_FILE}"
+  grep --only-matching --perl-regexp 'execution time:\s+\K\d+\.\d+.{1,2}s' \
+    "${OUTPUT_FILE}"
   exit 0
 else
   INPUT_FILE_BINARY="$(mktemp)"
@@ -31,6 +32,7 @@ else
 
   xxd -r -p < "${INPUT_FILE}" | "$VM_BINARY" > "${OUTPUT_FILE}"
 
-  grep -oP 'execution time:\s+\K\d+\.\d+.{1,2}s' "${OUTPUT_FILE}"
+  grep --only-matching --perl-regexp 'execution time:\s+\K\d+\.\d+.{1,2}s' \
+    "${OUTPUT_FILE}"
   exit 0
 fi
