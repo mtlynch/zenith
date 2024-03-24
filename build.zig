@@ -5,7 +5,7 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
 
     const evm_module = b.createModule(.{
-        .source_file = .{ .path = "src/vm.zig" },
+        .source_file = .{ .path = "src/evm/opcodes.zig" },
     });
 
     const exe = b.addExecutable(.{
