@@ -8,6 +8,7 @@ pub const OpCode = enum(u8) {
     PUSH1 = 0x60,
     PUSH32 = 0x7f,
     MSTORE = 0x52,
+    PC = 0x58,
     RETURN = 0xf3,
     _,
 };
@@ -43,11 +44,11 @@ pub const VM = struct {
         }
     }
 
-    pub fn nextInstruction(self: *VM, reader: anytype) !bool {
+    pub fn nextInstruction(self: *VM, stream: std.io.FixedBufferStream(u8)) !bool {
         // This doesn't really matter, since the opcode is a single byte.
         const byteOrder = std.builtin.Endian.Big;
 
-        const op: OpCode = reader.readEnum(OpCode, byteOrder) catch |err| switch (err) {
+        const op: OpCode = stream.reader.readEnum(OpCode, byteOrder) catch |err| switch (err) {
             error.EndOfStream => {
                 return false;
             },
@@ -109,6 +110,15 @@ pub const VM = struct {
                 const newState = ((self.memory.length() << 2) / 512) + (3 * self.memory.length());
                 self.gasConsumed += 3;
                 self.gasConsumed += @as(u64, newState - oldState);
+                return true;
+            },
+            OpCode.PC => {
+                std.log.debug("{s}", .{@tagName(op)});
+
+                const pos = try reader.getPos();
+                try self.stack.push(pos - 1);
+                self.gasConsumed += 2;
+
                 return true;
             },
             OpCode.RETURN => {
@@ -268,5 +278,24 @@ test "use push32 and return a single byte" {
     const expectedGasConsumed = 18;
     const expectedStack = [_]u256{};
     const expectedMemory = [_]u256{0x1000000000000000000000000000000000000000000000000000000000000000};
+    try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
+}
+
+test "use pc to measure program counter" {
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(OpCode.PC),
+        @intFromEnum(OpCode.PC),
+        @intFromEnum(OpCode.PUSH1), 0xaa,
+        @intFromEnum(OpCode.PC),
+        @intFromEnum(OpCode.PUSH32), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xbb,
+        @intFromEnum(OpCode.PC),
+    };
+    // zig fmt: on
+
+    const expectedReturnValue = [_]u8{};
+    const expectedGasConsumed = (4 * 2) + (3 * 2);
+    const expectedStack = [_]u256{ 0x00, 0x01, 0xaa, 0x04, 0x00000000000000000000000000000000000000000000000000000000000000bb, 4 + 1 + 1 + 32 };
+    const expectedMemory = [_]u256{};
     try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
 }
