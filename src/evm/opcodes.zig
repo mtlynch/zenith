@@ -1,10 +1,14 @@
+const evmc = @cImport({
+    @cInclude("evmc/instructions.h");
+});
+
 pub const OpCode = enum(u8) {
-    ADD = 0x01,
-    MOD = 0x06,
-    PUSH1 = 0x60,
-    PUSH32 = 0x7f,
-    MSTORE = 0x52,
-    PC = 0x58,
-    RETURN = 0xf3,
+    ADD = evmc.OP_ADD,
+    MOD = evmc.OP_MOD,
+    PUSH1 = evmc.OP_PUSH1,
+    PUSH32 = evmc.OP_PUSH32,
+    MSTORE = evmc.OP_MSTORE,
+    PC = evmc.OP_PC,
+    RETURN = evmc.OP_RETURN,
     _,
 };
