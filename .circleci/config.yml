@@ -6,10 +6,17 @@ executors:
   nix:
     docker:
       - image: nixos/nix:2.15.0
+    environment:
+      CACHIX_NAME: mtlynch-whatgotdone
 jobs:
   run_unit_tests:
     executor: nix
     steps:
+      - run:
+        name: Set up Cachix
+        command: |
+          nix-env -iA cachix -f https://cachix.org/api/v1/install
+          cachix use "${CACHIX_NAME}"
       - run:
           name: Enable Nix flakes
           command: echo 'experimental-features = nix-command flakes' >> /etc/nix/nix.conf
@@ -18,10 +25,17 @@ jobs:
           at: ./
       - run:
           name: Run unit tests
-          command: nix develop --command zig build test --summary all
+          command: |
+            cachix watch-exec "${CACHIX_NAME}" -- \
+              nix develop --command zig build test --summary all
   compile_test_cases:
     executor: nix
     steps:
+      - run:
+        name: Set up Cachix
+        command: |
+          nix-env -iA cachix -f https://cachix.org/api/v1/install
+          cachix use "${CACHIX_NAME}"
       - run:
           name: Enable Nix flakes
           command: echo 'experimental-features = nix-command flakes' >> /etc/nix/nix.conf
@@ -34,7 +48,9 @@ jobs:
               'zig build -Doptimize=ReleaseSafe --verbose'
       - run:
           name: Compile test cases
-          command: nix develop --command ./dev-scripts/compile-testcases
+          command: |
+            cachix watch-exec "${CACHIX_NAME}" -- \
+              nix develop --command ./dev-scripts/compile-testcases
       - persist_to_workspace:
           root: ./
           paths:
@@ -42,6 +58,11 @@ jobs:
   benchmark:
     executor: nix
     steps:
+      - run:
+        name: Set up Cachix
+        command: |
+          nix-env -iA cachix -f https://cachix.org/api/v1/install
+          cachix use "${CACHIX_NAME}"
       - run:
           name: Enable Nix flakes
           command: echo 'experimental-features = nix-command flakes' >> /etc/nix/nix.conf
@@ -51,9 +72,11 @@ jobs:
       - run:
           name: Benchmark eth-zvm
           command: |
-            nix develop --command bash -c \
+            cachix watch-exec "${CACHIX_NAME}" -- \
+              nix develop --command bash -c \
               'zig build -Doptimize=ReleaseFast --verbose'
-            nix develop --command bash -c \
+            cachix watch-exec "${CACHIX_NAME}" -- \
+              nix develop --command bash -c \
               'dev-scripts/benchmark-all-inputs ./zig-out/bin/eth-zvm 30'
       - persist_to_workspace:
           root: ./
