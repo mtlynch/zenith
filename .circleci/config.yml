@@ -77,7 +77,7 @@ jobs:
           root: ./
           paths:
             - ./benchmarks/*.benchmark
-  benchmark_evm:
+  benchmark_besu:
     docker:
       image: hyperledger/besu-evmtool:24.1
     steps:
