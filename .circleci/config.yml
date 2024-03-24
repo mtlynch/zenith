@@ -19,6 +19,7 @@ jobs:
       - run:
           name: Run unit tests
           command: nix develop --command zig build test --summary all
+  # TODO: Test evmc compatibility of libethzvm.
   compile_test_cases:
     executor: nix
     steps:
