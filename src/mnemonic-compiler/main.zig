@@ -27,7 +27,6 @@ pub fn main() !void {
         }
         allocator.free(tokens);
     }
-    infile.close();
 
     const bytecode = try parser.parseTokens(tokens, allocator);
     defer allocator.free(bytecode);
