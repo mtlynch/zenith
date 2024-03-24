@@ -37,18 +37,19 @@ pub const VM = struct {
 
     pub fn run(self: *VM, bytecode: []const u8) !void {
         var stream = std.io.fixedBufferStream(bytecode);
-        var reader = stream.reader();
 
-        while (try self.nextInstruction(reader)) {
+        while (try self.nextInstruction(&stream)) {
             std.log.debug("---", .{});
         }
     }
 
-    pub fn nextInstruction(self: *VM, stream: std.io.FixedBufferStream(u8)) !bool {
+    pub fn nextInstruction(self: *VM, stream: *std.io.FixedBufferStream([]const u8)) !bool {
         // This doesn't really matter, since the opcode is a single byte.
         const byteOrder = std.builtin.Endian.Big;
 
-        const op: OpCode = stream.reader.readEnum(OpCode, byteOrder) catch |err| switch (err) {
+        const reader = stream.reader();
+
+        const op: OpCode = reader.readEnum(OpCode, byteOrder) catch |err| switch (err) {
             error.EndOfStream => {
                 return false;
             },
@@ -115,7 +116,7 @@ pub const VM = struct {
             OpCode.PC => {
                 std.log.debug("{s}", .{@tagName(op)});
 
-                const pos = try reader.getPos();
+                const pos = try stream.getPos();
                 try self.stack.push(pos - 1);
                 self.gasConsumed += 2;
 
