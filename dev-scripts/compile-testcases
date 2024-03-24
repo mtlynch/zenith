@@ -24,7 +24,6 @@ pushd "${TESTDATA_FOLDER}" > /dev/null
 
 test_files=()
 for file in *; do
-  # Check if the file is a regular file
   if [[ -f "${file}" ]]; then
       filename="$(basename "${file}" "${MNEMONIC_EXTENSION}")"
       test_files+=("$filename")
