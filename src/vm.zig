@@ -1,7 +1,7 @@
 const std = @import("std");
+const evm = @import("evm");
 const memory = @import("memory.zig");
 const stack = @import("stack.zig");
-const evm = @import("evm/opcodes.zig");
 
 pub const VMError = error{
     NotImplemented,

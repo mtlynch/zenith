@@ -14,6 +14,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    exe.addModule("evm", evm_module);
     b.installArtifact(exe);
 
     const mnemonic_exe = b.addExecutable(.{
@@ -40,7 +41,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-
+    unit_tests.addModule("evm", evm_module);
     const run_unit_tests = b.addRunArtifact(unit_tests);
 
     const mnc_unit_tests = b.addTest(.{
