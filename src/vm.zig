@@ -34,7 +34,7 @@ pub const VM = struct {
     }
 
     pub fn nextInstruction(self: *VM, stream: *std.io.FixedBufferStream([]const u8)) !bool {
-        // This doesn't really matter, since the evm.OpCode is a single byte.
+        // This doesn't really matter, since the opcode is a single byte.
         const byteOrder = std.builtin.Endian.Big;
 
         const reader = stream.reader();
