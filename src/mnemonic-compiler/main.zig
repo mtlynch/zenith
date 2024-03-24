@@ -3,10 +3,6 @@ const vm = @import("vm");
 const parser = @import("parser.zig");
 const tokenizer = @import("tokenizer.zig");
 
-fn printByte(writer: anytype, val: u8) !void {
-    try writer.print("{x:0>2}", .{val});
-}
-
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
