@@ -5,7 +5,7 @@ executors:
       - image: cimg/base:2024.01
   nix:
     docker:
-      - image: nixos/nix:2.15.0
+      - image: nixos/nix:2.16.3
 jobs:
   run_unit_tests:
     executor: nix
