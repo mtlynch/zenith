@@ -10,16 +10,13 @@ pub fn main() !void {
     const bytecode = try readStdin(allocator);
     defer allocator.free(bytecode);
 
-    var stream = std.io.fixedBufferStream(bytecode);
-    var reader = stream.reader();
-
     var evm = vm.VM{};
     evm.init(allocator);
     defer evm.deinit();
 
     var timer = try std.time.Timer.start();
     const start = timer.lap();
-    try evm.run(&reader);
+    try evm.run(bytecode);
     const end = timer.read();
     const elapsed_micros = @as(f64, @floatFromInt(end - start)) / std.time.ns_per_us;
 

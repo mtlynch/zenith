@@ -34,7 +34,10 @@ pub const VM = struct {
         self.allocator.free(self.returnValue);
     }
 
-    pub fn run(self: *VM, reader: anytype) !void {
+    pub fn run(self: *VM, bytecode: []const u8) !void {
+        var stream = std.io.fixedBufferStream(bytecode);
+        var reader = stream.reader();
+
         while (try self.nextInstruction(reader)) {
             std.log.debug("---", .{});
         }
@@ -133,14 +136,11 @@ pub const VM = struct {
 fn testBytecode(bytecode: []const u8, expectedReturnValue: []const u8, expectedGasConsumed: u64, expectedStack: []const u256, expectedMemory: []const u256) !void {
     const allocator = std.testing.allocator;
 
-    var stream = std.io.fixedBufferStream(bytecode);
-    var reader = stream.reader();
-
     var evm = VM{};
     evm.init(allocator);
     defer evm.deinit();
 
-    try evm.run(&reader);
+    try evm.run(bytecode);
 
     try std.testing.expectEqualSlices(u8, expectedReturnValue, evm.returnValue);
     try std.testing.expectEqual(expectedGasConsumed, evm.gasConsumed);
