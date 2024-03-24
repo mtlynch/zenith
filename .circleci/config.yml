@@ -120,3 +120,4 @@ workflows:
           requires:
             - benchmark
             - benchmark_evm
+            - benchmark_besu
