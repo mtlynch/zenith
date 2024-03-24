@@ -22,7 +22,7 @@ readonly BYTECODE_EXTENSION='.bytecode'
 readonly BENCHMARK_FOLDER='benchmarks'
 readonly BENCHMARK_EXTENSION='.benchmark'
 
-pushd "${TESTDATA_FOLDER}"
+pushd "${TESTDATA_FOLDER}" > /dev/null
 
 test_files=()
 for file in *; do
@@ -33,7 +33,7 @@ for file in *; do
   fi
 done
 
-popd
+popd > /dev/null
 
 readonly VM_BINARY_BASENAME="$(basename "${VM_BINARY}")"
 
