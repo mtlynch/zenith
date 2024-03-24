@@ -34,7 +34,10 @@ pub const VM = struct {
         self.allocator.free(self.returnValue);
     }
 
-    pub fn run(self: *VM, reader: anytype) !void {
+    pub fn run(self: *VM, bytecode: []u8) !void {
+        var stream = std.io.fixedBufferStream(bytecode);
+        var reader = stream.reader();
+
         while (try self.nextInstruction(reader)) {
             std.log.debug("---", .{});
         }
