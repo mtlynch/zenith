@@ -79,7 +79,7 @@ jobs:
             - ./benchmarks/*.benchmark
   benchmark_besu:
     docker:
-      image: hyperledger/besu-evmtool:24.1
+      - image: hyperledger/besu-evmtool:24.1
     steps:
       - checkout
       - attach_workspace:
