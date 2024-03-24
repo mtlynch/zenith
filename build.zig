@@ -3,11 +3,11 @@ const std = @import("std");
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
+    const evmc_include_path = "third-party/evmc/v11.0.1";
 
     const evm_module = b.createModule(.{
         .source_file = .{ .path = "src/evm/opcodes.zig" },
     });
-    evm_module.addIncludePath(.{ .path = "third-party/evmc/v11.0.1" });
 
     const exe = b.addExecutable(.{
         .name = "eth-zvm",
@@ -16,6 +16,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     exe.addModule("evm", evm_module);
+    exe.addIncludePath(.{ .path = evmc_include_path });
     b.installArtifact(exe);
 
     const mnemonic_exe = b.addExecutable(.{
@@ -25,6 +26,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     mnemonic_exe.addModule("evm", evm_module);
+    mnemonic_exe.addIncludePath(.{ .path = evmc_include_path });
     b.installArtifact(mnemonic_exe);
 
     const run_cmd = b.addRunArtifact(exe);
@@ -43,6 +45,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     unit_tests.addModule("evm", evm_module);
+    unit_tests.addIncludePath(.{ .path = evmc_include_path });
     const run_unit_tests = b.addRunArtifact(unit_tests);
 
     const mnc_unit_tests = b.addTest(.{
@@ -51,6 +54,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     mnc_unit_tests.addModule("evm", evm_module);
+    mnc_unit_tests.addIncludePath(.{ .path = evmc_include_path });
 
     const run_mnc_unit_tests = b.addRunArtifact(mnc_unit_tests);
 

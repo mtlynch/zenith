@@ -4,11 +4,11 @@ const evmc = @cImport({
 
 pub const OpCode = enum(u8) {
     ADD = evmc.OP_ADD,
-    MOD = 0x06,
-    PUSH1 = 0x60,
-    PUSH32 = 0x7f,
-    MSTORE = 0x52,
-    PC = 0x58,
-    RETURN = 0xf3,
+    MOD = evmc.OP_MOD,
+    PUSH1 = evmc.OP_PUSH1,
+    PUSH32 = evmc.OP_PUSH32,
+    MSTORE = evmc.OP_MSTORE,
+    PC = evmc.OP_PC,
+    RETURN = evmc.OP_RETURN,
     _,
 };
