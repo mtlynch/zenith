@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+
+# Exit on first failure.
+set -e
+
+# Exit on unset variable.
+set -u
+
+# Echo commands before executing them, by default to stderr.
+set -x
+
+# Fail when piped commands fail.
+set -o pipefail
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+readonly SCRIPT_DIR
+cd "${SCRIPT_DIR}/.."
+
+readonly EVMC_VERSION='v11.0.1'
+readonly EVMC_BASE_DIR='third-party/evmc'
+
+# Clear old headers.
+rm -rf "${EVMC_BASE_DIR}"
+
+readonly HEADER_DIR="${EVMC_BASE_DIR}/${EVMC_VERSION}/evmc"
+
+mkdir -p "${HEADER_DIR}"
+pushd "${HEADER_DIR}"
+
+readonly BASE_URL="https://raw.githubusercontent.com/ethereum/evmc/${EVMC_VERSION}/include/evmc/"
+HEADER_FILENAMES=("evmc.h" "helpers.h" "instructions.h" "loader.h" "utils.h")
+
+for HEADER_FILENAME in "${HEADER_FILENAMES[@]}"
+do
+  echo "Downloading ${HEADER_FILENAME}"
+  wget "${BASE_URL}${HEADER_FILENAME}"
+done
