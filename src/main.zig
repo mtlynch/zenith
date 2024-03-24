@@ -1,6 +1,6 @@
 const std = @import("std");
-const stack = @import("stack.zig");
-const vm = @import("vm.zig");
+const stack = @import("evm/stack.zig");
+const vm = @import("evm/vm.zig");
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
