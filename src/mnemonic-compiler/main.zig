@@ -1,5 +1,4 @@
 const std = @import("std");
-const vm = @import("vm");
 const parser = @import("parser.zig");
 const tokenizer = @import("tokenizer.zig");
 
