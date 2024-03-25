@@ -60,6 +60,8 @@ jobs:
           root: ./
           paths:
             - ./benchmarks/*.benchmark
+      - store_artifacts:
+          path: zig-out/
   benchmark_evm:
     executor: base
     steps:
