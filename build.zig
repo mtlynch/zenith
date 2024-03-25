@@ -5,9 +5,25 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
     const evmc_include_path = "third-party/evmc/v11.0.1";
 
-    const evm_module = b.createModule(.{
+    const evm_memory_module = b.createModule(.{
+        .source_file = .{ .path = "src/evm/memory.zig" },
+    });
+    const evm_opcodes_module = b.createModule(.{
         .source_file = .{ .path = "src/evm/opcodes.zig" },
     });
+    const evm_stack_module = b.createModule(.{
+        .source_file = .{ .path = "src/evm/stack.zig" },
+    });
+    const evm_vm_module = b.createModule(.{
+        .source_file = .{ .path = "src/evm/vm.zig" },
+    });
+
+    const evm_module = b.addModule("evm", .{ .source_file = .{ .path = "src/evm/evm.zig" }, .imports = &.{
+        .{ .name = "memory", .module = evm_memory_module },
+        .{ .name = "opcodes", .module = evm_opcodes_module },
+        .{ .name = "stack", .module = evm_stack_module },
+        .{ .name = "vm", .module = evm_vm_module },
+    } });
 
     const exe = b.addExecutable(.{
         .name = "eth-zvm",

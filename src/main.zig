@@ -1,6 +1,5 @@
 const std = @import("std");
-const stack = @import("evm/stack.zig");
-const vm = @import("evm/vm.zig");
+const evm = @import("evm");
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -10,21 +9,21 @@ pub fn main() !void {
     const bytecode = try readStdin(allocator);
     defer allocator.free(bytecode);
 
-    var evm = vm.VM{};
-    evm.init(allocator);
-    defer evm.deinit();
+    var vm = evm.VM{};
+    vm.init(allocator);
+    defer vm.deinit();
 
     var timer = try std.time.Timer.start();
     const start = timer.lap();
-    try evm.run(bytecode);
+    try vm.run(bytecode);
     const end = timer.read();
     const elapsed_micros = @as(f64, @floatFromInt(end - start)) / std.time.ns_per_us;
 
     const output = std.io.getStdOut().writer();
-    try output.print("EVM gas used:    {}\n", .{evm.gasConsumed});
+    try output.print("EVM gas used:    {}\n", .{vm.gasConsumed});
     try output.print("execution time:  {d:.3}µs\n", .{elapsed_micros});
-    if (evm.returnValue.len > 0) {
-        try output.print("0x{}\n", .{std.fmt.fmtSliceHexLower(evm.returnValue)});
+    if (vm.returnValue.len > 0) {
+        try output.print("0x{}\n", .{std.fmt.fmtSliceHexLower(vm.returnValue)});
     } else {
         // Match evm behavior by outputting a blank line when there is no return value.
         try output.print("\n", .{});
