@@ -8,6 +8,9 @@ pub fn build(b: *std.Build) void {
     const evm_module = b.createModule(.{
         .source_file = .{ .path = "src/evm/opcodes.zig" },
     });
+    const evm_vm_module = b.createModule(.{
+        .source_file = .{ .path = "src/evm/vm.zig" },
+    });
 
     const exe = b.addExecutable(.{
         .name = "eth-zvm",
@@ -36,6 +39,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     eth_zvm_lib.addIncludePath(.{ .path = evmc_include_path });
+    eth_zvm_lib.addModule("evm", evm_vm_module);
     b.installArtifact(eth_zvm_lib);
 
     const run_cmd = b.addRunArtifact(exe);

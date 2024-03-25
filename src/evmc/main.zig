@@ -1,3 +1,5 @@
+const std = @import("std");
+const evm = @import("evm");
 const evmc = @cImport({
     @cInclude("evmc/evmc.h");
 });
@@ -8,11 +10,34 @@ fn execute(
     _: ?*evmc.evmc_host_context,
     _: evmc.evmc_revision,
     _: [*c]const evmc.evmc_message,
-    _: [*c]const u8,
-    _: usize,
+    bytecode_c: [*c]const u8,
+    bytecode_c_size: usize,
 ) callconv(.C) evmc.evmc_result {
-    return evmc.evmc_result{
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+    defer _ = gpa.deinit();
+
+    var vm = evm.VM{};
+    vm.init(allocator);
+    defer vm.deinit();
+
+    const bytecode = bytecode_c[0..bytecode_c_size];
+
+    vm.run(bytecode) catch return evmc.evmc_result{
         .status_code = evmc.EVMC_FAILURE,
+        .gas_left = 0,
+        .gas_refund = 0,
+        .output_data = null,
+        .output_size = 0,
+        .release = null,
+        .create_address = evmc.evmc_address{
+            .bytes = [20]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+        },
+        .padding = [4]u8{ 0, 0, 0, 0 },
+    };
+
+    return evmc.evmc_result{
+        .status_code = evmc.EVMC_SUCCESS,
         .gas_left = 0,
         .gas_refund = 0,
         .output_data = null,
