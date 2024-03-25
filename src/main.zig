@@ -1,5 +1,4 @@
 const std = @import("std");
-const stack = @import("evm/stack.zig");
 const vm = @import("evm/vm.zig");
 
 pub fn main() !void {
