@@ -18,7 +18,6 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-    exe.addModule("evm", evm_module);
     exe.addIncludePath(.{ .path = evmc_include_path });
     b.installArtifact(exe);
 
@@ -57,7 +56,6 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-    unit_tests.addModule("evm", evm_module);
     unit_tests.addIncludePath(.{ .path = evmc_include_path });
     const run_unit_tests = b.addRunArtifact(unit_tests);
 
