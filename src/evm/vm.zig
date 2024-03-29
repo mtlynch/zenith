@@ -53,11 +53,7 @@ pub const VM = struct {
                     @tagName(op),
                 });
 
-                // Kind of a hack to force the program to exit.
-                const streamEnd = try stream.getEndPos();
-                try stream.seekTo(streamEnd);
-
-                return true;
+                return false;
             },
             opcodes.OpCode.ADD => {
                 std.log.debug("{s}", .{
