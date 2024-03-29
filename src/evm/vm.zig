@@ -79,6 +79,14 @@ pub const VM = struct {
                 try self.stack.push(c);
                 return true;
             },
+            opcodes.OpCode.ISZERO => {
+                std.log.debug("{s}", .{@tagName(op)});
+                self.gasConsumed += 3;
+                const val = try self.stack.pop();
+                const isZero: u8 = @intFromBool(val == 0);
+                try self.stack.push(isZero);
+                return true;
+            },
             opcodes.OpCode.PUSH1 => {
                 const b = try reader.readByte();
                 std.log.debug("{s} 0x{x:0>2}", .{ @tagName(op), b });
@@ -245,6 +253,36 @@ test "anything mod 0 is 0" {
 
     const expectedReturnValue = [_]u8{};
     const expectedGasConsumed = 11;
+    const expectedStack = [_]u256{0x00};
+    const expectedMemory = [_]u256{};
+    try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
+}
+
+test "verify zero is zero" {
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x00,
+        @intFromEnum(opcodes.OpCode.ISZERO),
+    };
+    // zig fmt: on
+
+    const expectedReturnValue = [_]u8{};
+    const expectedGasConsumed = 6;
+    const expectedStack = [_]u256{0x01};
+    const expectedMemory = [_]u256{};
+    try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
+}
+
+test "verify seven is not zero" {
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x07,
+        @intFromEnum(opcodes.OpCode.ISZERO),
+    };
+    // zig fmt: on
+
+    const expectedReturnValue = [_]u8{};
+    const expectedGasConsumed = 6;
     const expectedStack = [_]u256{0x00};
     const expectedMemory = [_]u256{};
     try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
