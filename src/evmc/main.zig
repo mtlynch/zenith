@@ -40,8 +40,8 @@ fn execute(
         .status_code = evmc.EVMC_SUCCESS,
         .gas_left = 0,
         .gas_refund = 0,
-        .output_data = null,
-        .output_size = 0,
+        .output_data = vm.returnValue.ptr,
+        .output_size = vm.returnValue.len,
         .release = null,
         .create_address = evmc.evmc_address{
             .bytes = [20]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
