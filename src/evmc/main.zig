@@ -5,11 +5,11 @@ const evmc = @cImport({
 });
 
 fn execute(
-    _: [*c]evmc.evmc_vm,
-    _: [*c]const evmc.evmc_host_interface,
+    _: ?*evmc.evmc_vm,
+    _: ?*const evmc.evmc_host_interface,
     _: ?*evmc.evmc_host_context,
     _: evmc.evmc_revision,
-    _: [*c]const evmc.evmc_message,
+    _: ?*const evmc.evmc_message,
     bytecode_c: [*c]const u8,
     bytecode_c_size: usize,
 ) callconv(.C) evmc.evmc_result {
@@ -21,9 +21,7 @@ fn execute(
     vm.init(allocator);
     defer vm.deinit();
 
-    const bytecode = bytecode_c[0..bytecode_c_size];
-
-    vm.run(bytecode) catch return evmc.evmc_result{
+    const fail_result = evmc.evmc_result{
         .status_code = evmc.EVMC_FAILURE,
         .gas_left = 0,
         .gas_refund = 0,
@@ -35,6 +33,10 @@ fn execute(
         },
         .padding = [4]u8{ 0, 0, 0, 0 },
     };
+
+    const bytecode = bytecode_c[0..bytecode_c_size];
+
+    vm.run(bytecode) catch return fail_result;
 
     return evmc.evmc_result{
         .status_code = evmc.EVMC_SUCCESS,
@@ -50,11 +52,11 @@ fn execute(
     };
 }
 
-fn get_capabilities(_: [*c]evmc.evmc_vm) callconv(.C) evmc.evmc_capabilities_flagset {
+fn get_capabilities(_: ?*evmc.evmc_vm) callconv(.C) evmc.evmc_capabilities_flagset {
     return evmc.EVMC_CAPABILITY_EVM1;
 }
 
-fn destroy(_: [*c]evmc.evmc_vm) callconv(.C) void {
+fn destroy(_: ?*evmc.evmc_vm) callconv(.C) void {
     return;
 }
 
