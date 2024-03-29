@@ -48,6 +48,17 @@ pub const VM = struct {
             },
         };
         switch (op) {
+            opcodes.OpCode.STOP => {
+                std.log.debug("{s}", .{
+                    @tagName(op),
+                });
+
+                // Kind of a hack to force the program to exit.
+                const streamEnd = try stream.getEndPos();
+                try stream.seekTo(streamEnd);
+
+                return true;
+            },
             opcodes.OpCode.ADD => {
                 std.log.debug("{s}", .{
                     @tagName(op),
@@ -147,6 +158,36 @@ fn testBytecode(bytecode: []const u8, expectedReturnValue: []const u8, expectedG
     try std.testing.expectEqual(expectedGasConsumed, vm.gasConsumed);
     try std.testing.expectEqualSlices(u256, expectedStack, vm.stack.slice());
     try std.testing.expectEqualSlices(u256, expectedMemory, vm.memory.slice());
+}
+
+test "exit immediately" {
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(opcodes.OpCode.STOP)
+    };
+    // zig fmt: on
+
+    const expectedReturnValue = [_]u8{};
+    const expectedGasConsumed = 0;
+    const expectedStack = [_]u256{};
+    const expectedMemory = [_]u256{};
+    try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
+}
+
+test "exit after pushing two values to stack" {
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x02,
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x01,
+        @intFromEnum(opcodes.OpCode.STOP),
+    };
+    // zig fmt: on
+
+    const expectedReturnValue = [_]u8{};
+    const expectedGasConsumed = 6;
+    const expectedStack = [_]u256{ 0x02, 0x01 };
+    const expectedMemory = [_]u256{};
+    try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
 }
 
 test "add two bytes" {
