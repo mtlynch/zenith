@@ -196,7 +196,10 @@ test "add two bytes" {
     // zig fmt: on
 
     const expectedReturnValue = [_]u8{};
-    try testBytecode(&bytecode, &expectedReturnValue, 9, &[_]u256{0x05}, &[_]u256{});
+    const expectedGasConsumed = 9;
+    const expectedStack = [_]u256{0x05};
+    const expectedMemory = [_]u256{};
+    try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
 }
 
 test "adding one to max u256 should wrap to zero" {
