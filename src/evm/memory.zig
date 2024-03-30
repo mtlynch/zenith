@@ -18,7 +18,8 @@ pub const ExpandableMemory = struct {
     pub fn write(self: *ExpandableMemory, offset: u256, value: u256) !void {
         const offsetUsize = std.math.cast(usize, offset) orelse return MemoryError.MemoryReferenceTooLarge;
         std.log.debug("  Memory: Writing value=0x{x} to memory offset={d}", .{ value, offset });
-        try self.storage.replaceRange(offsetUsize, 0, &[_]u256{value});
+        const wordsToDelete = @min(1, self.storage.items[offsetUsize..].len);
+        try self.storage.replaceRange(offsetUsize, wordsToDelete, &[_]u256{value});
     }
 
     pub fn read(self: ExpandableMemory, allocator: std.mem.Allocator, offset: u32, size: u32) ![]u8 {
