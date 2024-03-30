@@ -25,7 +25,8 @@ pub const ExpandableMemory = struct {
     pub fn read(self: ExpandableMemory, allocator: std.mem.Allocator, offset: u256, size: u256) ![]u8 {
         const offsetUsize = std.math.cast(usize, offset) orelse return MemoryError.MemoryReferenceTooLarge;
         const sizeUsize = std.math.cast(usize, size) orelse return MemoryError.MemoryReferenceTooLarge;
-        std.log.debug("  Memory: reading size={d} bytes from offset={d}", .{ size, offset });
+
+        std.log.debug("  Memory: reading size={d} bytes from offset={d}", .{ sizeUsize, offsetUsize });
 
         // Make a copy of memory in big-endian order.
         // TODO: We can optimize this to only copy the bytes that we want to read.
