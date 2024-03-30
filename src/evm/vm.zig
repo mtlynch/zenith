@@ -94,7 +94,7 @@ pub const VM = struct {
                 const offset = try self.stack.pop();
                 const size = try self.stack.pop();
 
-                const wordSize = 256 / 8;
+                const wordSize = @sizeOf(u256) / @sizeOf(u8);
                 const wordCountRoundedUp = std.math.cast(u64, (size + (wordSize - 1)) / wordSize) orelse return VMError.MemoryReferenceTooLarge;
                 self.gasConsumed += 6 * wordCountRoundedUp;
 
