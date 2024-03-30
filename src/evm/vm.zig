@@ -98,11 +98,13 @@ pub const VM = struct {
                 const size = std.math.cast(u32, size256) orelse return VMError.MemoryReferenceTooLarge;
 
                 const oldLength = self.memory.length();
+                std.log.debug("  old len = {d}", .{oldLength}); // DEBUG
 
                 const val = try self.memory.read(self.allocator, offset, size);
                 defer self.allocator.free(val);
 
                 const newLength = self.memory.length();
+                std.log.debug("  new len = {d}", .{newLength}); // DEBUG
 
                 self.gasConsumed += memoryExpansionCost(oldLength, newLength);
 
@@ -147,8 +149,10 @@ pub const VM = struct {
                 const value = try self.stack.pop();
 
                 const oldLength = self.memory.length();
+                std.log.debug("  old len = {d}", .{oldLength}); // DEBUG
                 try self.memory.write(offset, value);
                 const newLength = self.memory.length();
+                std.log.debug("  new len = {d}", .{newLength}); // DEBUG
 
                 self.gasConsumed += 3;
                 self.gasConsumed += memoryExpansionCost(oldLength, newLength);
