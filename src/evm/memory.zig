@@ -2,6 +2,7 @@ const std = @import("std");
 
 pub const MemoryError = error{
     NotImplemented,
+    MemoryReferenceTooLarge,
 };
 
 pub const ExpandableMemory = struct {
@@ -16,11 +17,9 @@ pub const ExpandableMemory = struct {
     }
 
     pub fn write(self: *ExpandableMemory, offset: u256, value: u256) !void {
+        const offsetUsize = std.math.cast(usize, offset) orelse return MemoryError.MemoryReferenceTooLarge;
         std.log.debug("  Memory: Writing value=0x{x} to memory offset={d}", .{ value, offset });
-        if (offset != 0) {
-            return MemoryError.NotImplemented;
-        }
-        return self.storage.append(value);
+        try self.storage.replaceRange(offsetUsize, 0, &[_]u256{value});
     }
 
     pub fn read(self: ExpandableMemory, allocator: std.mem.Allocator, offset: u32, size: u32) ![]u8 {
@@ -68,8 +67,8 @@ fn testRead(
     var mem = ExpandableMemory{};
     mem.init(allocator);
     defer mem.deinit();
-    for (memory) |b| {
-        try mem.write(0, b);
+    for (memory, 0..) |b, i| {
+        try mem.write(i, b);
     }
     const rBytes = try mem.read(allocator, offset, size);
     defer allocator.free(rBytes);
@@ -97,4 +96,18 @@ test "read from memory as bytes" {
         0x0123456789abcdefaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,
         0x13579bdf02468ace111111111111111111111111111111111111111111111111,
     }, 30, 4, &[_]u8{ 0xaa, 0xaa, 0x13, 0x57 });
+}
+
+test "overwrite memory" {
+    const allocator = std.testing.allocator;
+    var mem = ExpandableMemory{};
+    mem.init(allocator);
+    defer mem.deinit();
+    try mem.write(0, 0x01);
+    try mem.write(0, 0x02);
+    const rBytes = try mem.read(allocator, 31, 1);
+    defer allocator.free(rBytes);
+
+    const expectedRead = [_]u8{0x02};
+    try std.testing.expectEqualSlices(u8, &expectedRead, rBytes);
 }
