@@ -28,6 +28,7 @@ pub const VM = struct {
         var stream = std.io.fixedBufferStream(bytecode);
 
         while (try self.nextInstruction(&stream)) {
+            std.log.debug("  Gas consumed: {}", .{self.gasConsumed});
             std.log.debug("---", .{});
         }
     }
