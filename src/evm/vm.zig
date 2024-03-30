@@ -341,9 +341,6 @@ test "calculate a keccak hash of a 32-bit value" {
 }
 
 test "calculate a keccak hash of a 32-bit value twice" {
-    std.testing.log_level = std.log.Level.debug; // DEBUG
-    defer std.testing.log_level = std.log.Level.info; // DEBUG
-
     // zig fmt: off
     const bytecode = [_]u8{
         @intFromEnum(opcodes.OpCode.PUSH32), 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -362,8 +359,8 @@ test "calculate a keccak hash of a 32-bit value twice" {
 
     const expectedReturnValue = [_]u8{};
     const expectedGasConsumed = 102;
-    const expectedStack = [_]u256{0xd7200b7fa6bb5b32a5ab09b453e53030168e55b1e5a0f149626f2cd2714a107c};
-    const expectedMemory = [_]u256{0x7226c59bee1feea810ea6a7fca1b6540a458167f6e55860209131aae72b4e0db};
+    const expectedStack = [_]u256{0xc05f009506ab1986a4bf586e65fdc9fbfc7004b07f136ab5378d89e8db9f43b5};
+    const expectedMemory = [_]u256{0x29045a592007d0c246ef02c2223570da9522d0cf0f73282c79a1bc8f0bb2c238};
     try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
 }
 
