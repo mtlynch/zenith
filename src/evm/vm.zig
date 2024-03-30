@@ -5,6 +5,7 @@ const stack = @import("stack.zig");
 
 pub const VMError = error{
     NotImplemented,
+    MemoryReferenceTooLarge,
 };
 
 pub const VM = struct {
@@ -90,11 +91,12 @@ pub const VM = struct {
             opcodes.OpCode.KECCAK256 => {
                 std.log.debug("{s}", .{@tagName(op)});
 
-                const offset256 = try self.stack.pop();
-                const size256 = try self.stack.pop();
+                const offset = try self.stack.pop();
+                const size = try self.stack.pop();
 
-                const offset = std.math.cast(u32, offset256) orelse return VMError.MemoryReferenceTooLarge;
-                const size = std.math.cast(u32, size256) orelse return VMError.MemoryReferenceTooLarge;
+                const wordSize = 256 / 8;
+                const wordCountRoundedUp = std.math.cast(u64, (size + (wordSize - 1)) / wordSize) orelse return VMError.MemoryReferenceTooLarge;
+                self.gasConsumed += 6 * wordCountRoundedUp;
 
                 const oldLength = self.memory.length();
                 std.log.debug("  old len = {d}", .{oldLength}); // DEBUG
@@ -118,11 +120,7 @@ pub const VM = struct {
                 const val256 = std.mem.bytesToValue(u256, &hash);
                 const valBig = std.mem.nativeTo(u256, val256, std.builtin.Endian.Big);
 
-                const wordSize = 256 / 8;
-                const wordCountRoundedUp = (size + (wordSize - 1)) / wordSize;
-
                 self.gasConsumed += 30;
-                self.gasConsumed += 6 * wordCountRoundedUp;
 
                 try self.stack.push(valBig);
 
@@ -148,13 +146,11 @@ pub const VM = struct {
                 const value = try self.stack.pop();
 
                 const oldLength = self.memory.length();
-                std.log.debug("  old len = {d}", .{oldLength}); // DEBUG
                 try self.memory.write(offset, value);
                 const newLength = self.memory.length();
-                std.log.debug("  new len = {d}", .{newLength}); // DEBUG
+                self.gasConsumed += memoryExpansionCost(oldLength, newLength);
 
                 self.gasConsumed += 3;
-                self.gasConsumed += memoryExpansionCost(oldLength, newLength);
                 return true;
             },
             opcodes.OpCode.PC => {
