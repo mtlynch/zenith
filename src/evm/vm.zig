@@ -5,7 +5,6 @@ const stack = @import("stack.zig");
 
 pub const VMError = error{
     NotImplemented,
-    MemoryReferenceTooLarge,
 };
 
 pub const VM = struct {
@@ -125,11 +124,8 @@ pub const VM = struct {
             },
             opcodes.OpCode.RETURN => {
                 std.log.debug("{s}", .{@tagName(op)});
-                const offset256 = try self.stack.pop();
-                const size256 = try self.stack.pop();
-
-                const offset = std.math.cast(u32, offset256) orelse return VMError.MemoryReferenceTooLarge;
-                const size = std.math.cast(u32, size256) orelse return VMError.MemoryReferenceTooLarge;
+                const offset = try self.stack.pop();
+                const size = try self.stack.pop();
 
                 self.returnValue = try self.memory.read(self.allocator, offset, size);
                 std.log.debug("  Return value: 0x{}", .{std.fmt.fmtSliceHexLower(self.returnValue)});
