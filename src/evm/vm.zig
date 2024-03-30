@@ -87,6 +87,45 @@ pub const VM = struct {
                 try self.stack.push(isZero);
                 return true;
             },
+            opcodes.OpCode.KECCAK256 => {
+                std.log.debug("{s}", .{@tagName(op)});
+
+                const offset256 = try self.stack.pop();
+                const size256 = try self.stack.pop();
+
+                const offset = std.math.cast(u32, offset256) orelse return VMError.MemoryReferenceTooLarge;
+                const size = std.math.cast(u32, size256) orelse return VMError.MemoryReferenceTooLarge;
+
+                const oldLength = self.memory.length();
+
+                const val = try self.memory.read(self.allocator, offset, size);
+                defer self.allocator.free(val);
+
+                const newLength = self.memory.length();
+
+                self.gasConsumed += memoryExpansionCost(oldLength, newLength);
+
+                std.log.debug("  Calcuating keccak256({any})", .{val});
+
+                const Keccak256 = std.crypto.hash.sha3.Keccak256;
+                var hash: [Keccak256.digest_length]u8 = undefined;
+                Keccak256.hash(val, &hash, .{});
+
+                std.debug.assert(hash.len == (256 / 8));
+
+                const val256 = std.mem.bytesToValue(u256, &hash);
+                const valBig = std.mem.nativeTo(u256, val256, std.builtin.Endian.Big);
+
+                const wordSize = 256 / 8;
+                const wordCountRoundedUp = (size + (wordSize - 1)) / wordSize;
+
+                self.gasConsumed += 30;
+                self.gasConsumed += 6 * wordCountRoundedUp;
+
+                try self.stack.push(valBig);
+
+                return true;
+            },
             opcodes.OpCode.PUSH1 => {
                 const b = try reader.readByte();
                 std.log.debug("{s} 0x{x:0>2}", .{ @tagName(op), b });
@@ -106,11 +145,12 @@ pub const VM = struct {
                 const offset = try self.stack.pop();
                 const value = try self.stack.pop();
 
-                const oldState = ((self.memory.length() << 2) / 512) + (3 * self.memory.length());
+                const oldLength = self.memory.length();
                 try self.memory.write(offset, value);
-                const newState = ((self.memory.length() << 2) / 512) + (3 * self.memory.length());
+                const newLength = self.memory.length();
+
                 self.gasConsumed += 3;
-                self.gasConsumed += @as(u64, newState - oldState);
+                self.gasConsumed += memoryExpansionCost(oldLength, newLength);
                 return true;
             },
             opcodes.OpCode.PC => {
@@ -141,6 +181,13 @@ pub const VM = struct {
         }
     }
 };
+
+fn memoryExpansionCost(oldLength: usize, newLength: usize) u64 {
+    const oldState = ((oldLength << 2) / 512) + (3 * oldLength);
+    const newState = ((newLength << 2) / 512) + (3 * newLength);
+
+    return @as(u64, newState - oldState);
+}
 
 fn testBytecode(bytecode: []const u8, expectedReturnValue: []const u8, expectedGasConsumed: u64, expectedStack: []const u256, expectedMemory: []const u256) !void {
     const allocator = std.testing.allocator;
@@ -278,6 +325,25 @@ test "verify seven is not zero" {
     const expectedGasConsumed = 6;
     const expectedStack = [_]u256{0x00};
     const expectedMemory = [_]u256{};
+    try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
+}
+
+test "calculate a keccak hash of a 256-bit value" {
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(opcodes.OpCode.PUSH32), 0xff, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x00,
+        @intFromEnum(opcodes.OpCode.MSTORE),
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x04,
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x00,
+        @intFromEnum(opcodes.OpCode.KECCAK256),
+    };
+    // zig fmt: on
+
+    const expectedReturnValue = [_]u8{};
+    const expectedGasConsumed = 54;
+    const expectedStack = [_]u256{0x29045a592007d0c246ef02c2223570da9522d0cf0f73282c79a1bc8f0bb2c238};
+    const expectedMemory = [_]u256{0xffffffff00000000000000000000000000000000000000000000000000000000};
     try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
 }
 
