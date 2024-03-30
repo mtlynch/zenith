@@ -105,14 +105,9 @@ pub const VM = struct {
                 std.log.debug("{s}", .{@tagName(op)});
                 const offset = try self.stack.pop();
                 const value = try self.stack.pop();
-                std.log.debug("  Memory: Writing value=0x{x} to memory offset={d}", .{ value, offset });
-                if (offset != 0) {
-                    return VMError.NotImplemented;
-                }
-                std.log.debug("  Memory: 0x{x:0>32}", .{value});
 
                 const oldState = ((self.memory.length() << 2) / 512) + (3 * self.memory.length());
-                try self.memory.write(value);
+                try self.memory.write(offset, value);
                 const newState = ((self.memory.length() << 2) / 512) + (3 * self.memory.length());
                 self.gasConsumed += 3;
                 self.gasConsumed += @as(u64, newState - oldState);
@@ -134,8 +129,6 @@ pub const VM = struct {
 
                 const offset = std.math.cast(u32, offset256) orelse return VMError.MemoryReferenceTooLarge;
                 const size = std.math.cast(u32, size256) orelse return VMError.MemoryReferenceTooLarge;
-
-                std.log.debug("  Memory: reading size={d} bytes from offset={d}", .{ size, offset });
 
                 self.returnValue = try self.memory.read(self.allocator, offset, size);
                 std.log.debug("  Return value: 0x{}", .{std.fmt.fmtSliceHexLower(self.returnValue)});
