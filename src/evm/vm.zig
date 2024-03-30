@@ -343,6 +343,25 @@ test "use push32 and return a single byte" {
     try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
 }
 
+test "MSTORE and then overwrite" {
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(opcodes.OpCode.PUSH32), 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x00,
+        @intFromEnum(opcodes.OpCode.MSTORE),
+        @intFromEnum(opcodes.OpCode.PUSH32), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff,
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x00,
+        @intFromEnum(opcodes.OpCode.MSTORE),
+    };
+    // zig fmt: on
+
+    const expectedReturnValue = [_]u8{};
+    const expectedGasConsumed = 21;
+    const expectedStack = [_]u256{};
+    const expectedMemory = [_]u256{0x000000000000000000000000000000000000000000000000000000000000ffff};
+    try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
+}
+
 test "use pc to measure program counter" {
     // zig fmt: off
     const bytecode = [_]u8{
