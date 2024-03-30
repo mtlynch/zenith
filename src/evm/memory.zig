@@ -1,5 +1,9 @@
 const std = @import("std");
 
+pub const MemoryError = error{
+    NotImplemented,
+};
+
 pub const ExpandableMemory = struct {
     storage: std.ArrayList(u256) = undefined,
 
@@ -11,11 +15,17 @@ pub const ExpandableMemory = struct {
         self.storage.deinit();
     }
 
-    pub fn write(self: *ExpandableMemory, value: u256) !void {
+    pub fn write(self: *ExpandableMemory, offset: u256, value: u256) !void {
+        std.log.debug("  Memory: Writing value=0x{x} to memory offset={d}", .{ value, offset });
+        if (offset != 0) {
+            return MemoryError.NotImplemented;
+        }
         return self.storage.append(value);
     }
 
     pub fn read(self: ExpandableMemory, allocator: std.mem.Allocator, offset: u32, size: u32) ![]u8 {
+        std.log.debug("  Memory: reading size={d} bytes from offset={d}", .{ size, offset });
+
         // Make a copy of memory in big-endian order.
         // TODO: We can optimize this to only copy the bytes that we want to read.
         var memoryCopy = try std.ArrayList(u256).initCapacity(allocator, self.storage.items.len);
@@ -59,7 +69,7 @@ fn testRead(
     mem.init(allocator);
     defer mem.deinit();
     for (memory) |b| {
-        try mem.write(b);
+        try mem.write(0, b);
     }
     const rBytes = try mem.read(allocator, offset, size);
     defer allocator.free(rBytes);
