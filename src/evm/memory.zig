@@ -1,7 +1,6 @@
 const std = @import("std");
 
 pub const MemoryError = error{
-    NotImplemented,
     MemoryReferenceTooLarge,
 };
 
