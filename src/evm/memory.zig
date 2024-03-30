@@ -22,8 +22,11 @@ pub const ExpandableMemory = struct {
         try self.storage.replaceRange(offsetUsize, wordsToDelete, &[_]u256{value});
     }
 
-    pub fn read(self: ExpandableMemory, allocator: std.mem.Allocator, offset: u32, size: u32) ![]u8 {
-        std.log.debug("  Memory: reading size={d} bytes from offset={d}", .{ size, offset });
+    pub fn read(self: ExpandableMemory, allocator: std.mem.Allocator, offset: u256, size: u256) ![]u8 {
+        const offsetUsize = std.math.cast(usize, offset) orelse return MemoryError.MemoryReferenceTooLarge;
+        const sizeUsize = std.math.cast(usize, size) orelse return MemoryError.MemoryReferenceTooLarge;
+
+        std.log.debug("  Memory: reading size={d} bytes from offset={d}", .{ sizeUsize, offsetUsize });
 
         // Make a copy of memory in big-endian order.
         // TODO: We can optimize this to only copy the bytes that we want to read.
@@ -35,10 +38,10 @@ pub const ExpandableMemory = struct {
 
         const mBytes = std.mem.sliceAsBytes(memoryCopy.items);
 
-        var rBytes = try std.ArrayList(u8).initCapacity(allocator, size);
+        var rBytes = try std.ArrayList(u8).initCapacity(allocator, sizeUsize);
         errdefer rBytes.deinit();
-        for (0..size) |i| {
-            try rBytes.insert(i, mBytes[offset + i]);
+        for (0..sizeUsize) |i| {
+            try rBytes.insert(i, mBytes[offsetUsize + i]);
         }
 
         return try rBytes.toOwnedSlice();
