@@ -175,11 +175,12 @@ pub const VM = struct {
     }
 };
 
-fn memoryExpansionCost(oldLength: usize, newLength: usize) u64 {
-    const oldState = ((oldLength << 2) / 512) + (3 * oldLength);
-    const newState = ((newLength << 2) / 512) + (3 * newLength);
+fn memoryLengthToStateSize(length: usize) u64 {
+    return @as(u64, ((length << 2) / 512) + (3 * length));
+}
 
-    return @as(u64, newState - oldState);
+fn memoryExpansionCost(oldLength: usize, newLength: usize) u64 {
+    return @as(u64, memoryLengthToStateSize(newLength) - memoryLengthToStateSize(oldLength));
 }
 
 fn testBytecode(bytecode: []const u8, expectedReturnValue: []const u8, expectedGasConsumed: u64, expectedStack: []const u256, expectedMemory: []const u256) !void {
