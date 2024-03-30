@@ -101,6 +101,34 @@ EOL
 }
 make_count_to_100k_test
 
+make_keccak256_100_rounds() {
+  local TEST_NAME="keccak256-100-rounds"
+  readonly TEST_NAME
+
+  echo "generating test: ${TEST_NAME}"
+
+  local FILENAME="${TEST_NAME}${MNEMONIC_EXTENSION}"
+  readonly FILENAME
+  if [[ -f "${FILENAME}" ]]; then
+    rm "${FILENAME}"
+  fi
+
+  echo 'PUSH32 0xffffffff00000000000000000000000000000000000000000000000000000000' >> "${FILENAME}"
+  # Get near the limit of the stack depth.
+  for ((i=1; i<=100; i++)); do
+        cat >> "${FILENAME}" << EOL
+PUSH1 0x00
+MSTORE
+PUSH1 0x20
+PUSH1 0x00
+KECCAK256
+EOL
+  done
+
+  test_files+=("generated/${TEST_NAME}")
+}
+make_keccak256_100_rounds
+
 popd > /dev/null
 
 readonly BYTECODE_EXTENSION='.bytecode'
