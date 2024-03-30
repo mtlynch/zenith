@@ -97,7 +97,7 @@ test "read from memory as bytes" {
     }, 30, 4, &[_]u8{ 0xaa, 0xaa, 0x13, 0x57 });
 }
 
-test "overwrite memory" {
+test "overwrite a byte of memory" {
     const allocator = std.testing.allocator;
     var mem = ExpandableMemory{};
     mem.init(allocator);
@@ -108,5 +108,19 @@ test "overwrite memory" {
     defer allocator.free(rBytes);
 
     const expectedRead = [_]u8{0x02};
+    try std.testing.expectEqualSlices(u8, &expectedRead, rBytes);
+}
+
+test "overwrite 32 bytes of memory" {
+    const allocator = std.testing.allocator;
+    var mem = ExpandableMemory{};
+    mem.init(allocator);
+    defer mem.deinit();
+    try mem.write(0, 0x000000000000000000000000000000000000000000000000000000000000ffff);
+    try mem.write(0, 0xffff000000000000000000000000000000000000000000000000000000000000);
+    const rBytes = try mem.read(allocator, 0, 32);
+    defer allocator.free(rBytes);
+
+    const expectedRead = [_]u8{ 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
     try std.testing.expectEqualSlices(u8, &expectedRead, rBytes);
 }
