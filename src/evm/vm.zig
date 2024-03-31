@@ -55,14 +55,31 @@ pub const VM = struct {
                 return false;
             },
             opcodes.OpCode.ADD => {
-                std.log.debug("{s}", .{
-                    @tagName(op),
-                });
+                std.log.debug("{s}", .{@tagName(op)});
+
                 const a = try self.stack.pop();
                 const b = try self.stack.pop();
+
                 const c = @addWithOverflow(a, b)[0];
+
                 try self.stack.push(c);
+
                 self.gasConsumed += 3;
+
+                return true;
+            },
+            opcodes.OpCode.MUL => {
+                std.log.debug("{s}", .{@tagName(op)});
+
+                const a = try self.stack.pop();
+                const b = try self.stack.pop();
+
+                const c = a *% b;
+
+                try self.stack.push(c);
+
+                self.gasConsumed += 5;
+
                 return true;
             },
             opcodes.OpCode.MOD => {
@@ -262,7 +279,7 @@ test "add two bytes" {
 test "adding one to max u256 should wrap to zero" {
     // zig fmt: off
     const bytecode = [_]u8{
-        @intFromEnum(opcodes.OpCode.PUSH32),  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        @intFromEnum(opcodes.OpCode.PUSH32), 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
         @intFromEnum(opcodes.OpCode.PUSH1), 0x01,
         @intFromEnum(opcodes.OpCode.ADD),
     };
@@ -271,6 +288,38 @@ test "adding one to max u256 should wrap to zero" {
     const expectedReturnValue = [_]u8{};
     const expectedGasConsumed = 9;
     const expectedStack = [_]u256{0x0};
+    const expectedMemory = [_]u256{};
+    try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
+}
+
+test "multiply two bytes with no integer overflow" {
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x03,
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x02,
+        @intFromEnum(opcodes.OpCode.MUL),
+    };
+    // zig fmt: on
+
+    const expectedReturnValue = [_]u8{};
+    const expectedGasConsumed = 3 + 3 + 5;
+    const expectedStack = [_]u256{0x06};
+    const expectedMemory = [_]u256{};
+    try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
+}
+
+test "multiply two bytes and allow integer overflow" {
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(opcodes.OpCode.PUSH32), 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x02,
+        @intFromEnum(opcodes.OpCode.MUL),
+    };
+    // zig fmt: on
+
+    const expectedReturnValue = [_]u8{};
+    const expectedGasConsumed = 3 + 3 + 5;
+    const expectedStack = [_]u256{0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe};
     const expectedMemory = [_]u256{};
     try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
 }
