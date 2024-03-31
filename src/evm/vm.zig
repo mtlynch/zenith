@@ -60,7 +60,7 @@ pub const VM = struct {
                 const a = try self.stack.pop();
                 const b = try self.stack.pop();
 
-                const c = @addWithOverflow(a, b)[0];
+                const c = a +% b;
 
                 try self.stack.push(c);
 
