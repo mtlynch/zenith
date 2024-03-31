@@ -8,6 +8,7 @@ pub const OpCode = enum(u8) {
     MOD = evmc.OP_MOD,
     ISZERO = evmc.OP_ISZERO,
     KECCAK256 = evmc.OP_KECCAK256,
+    POP = evmc.OP_POP,
     PUSH1 = evmc.OP_PUSH1,
     PUSH32 = evmc.OP_PUSH32,
     MSTORE = evmc.OP_MSTORE,

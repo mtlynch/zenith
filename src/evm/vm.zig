@@ -121,6 +121,14 @@ pub const VM = struct {
 
                 return true;
             },
+            opcodes.OpCode.POP => {
+                std.log.debug("{s}", .{
+                    @tagName(op),
+                });
+                _ = try self.stack.pop();
+                self.gasConsumed += 2;
+                return true;
+            },
             opcodes.OpCode.PUSH1 => {
                 const b = try reader.readByte();
                 std.log.debug("{s} 0x{x:0>2}", .{ @tagName(op), b });
@@ -317,6 +325,26 @@ test "verify seven is not zero" {
     const expectedReturnValue = [_]u8{};
     const expectedGasConsumed = 6;
     const expectedStack = [_]u256{0x00};
+    const expectedMemory = [_]u256{};
+    try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
+}
+
+test "push elements to the stack and then pop them off" {
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x01,
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x02,
+        @intFromEnum(opcodes.OpCode.PUSH32), 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x03,
+        @intFromEnum(opcodes.OpCode.POP),
+        @intFromEnum(opcodes.OpCode.POP),
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x04,
+    };
+    // zig fmt: on
+
+    const expectedReturnValue = [_]u8{};
+    const expectedGasConsumed = (3 * 5) + (2 * 2);
+    const expectedStack = [_]u256{ 0x01, 0x02, 0x04 };
     const expectedMemory = [_]u256{};
     try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
 }
