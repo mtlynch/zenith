@@ -50,9 +50,7 @@ pub const VM = struct {
         };
         switch (op) {
             opcodes.OpCode.STOP => {
-                std.log.debug("{s}", .{
-                    @tagName(op),
-                });
+                std.log.debug("{s}", .{@tagName(op)});
 
                 return false;
             },
