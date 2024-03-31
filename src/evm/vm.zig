@@ -478,7 +478,6 @@ test "check codesize of multiple instructions" {
     const expectedGasConsumed = 3 + 2 + 2;
     const expectedStack = [_]u256{1 + 32 + 1 + 1};
     const expectedMemory = [_]u256{};
-
     try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
 }
 
