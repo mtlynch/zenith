@@ -2,7 +2,7 @@ const std = @import("std");
 const vm = @import("evm/vm.zig");
 
 pub fn main() !void {
-    var buffer: [8000]u8 = undefined;
+    var buffer: [800000]u8 = undefined;
     var fba = std.heap.FixedBufferAllocator.init(&buffer);
     const allocator = fba.allocator();
 
