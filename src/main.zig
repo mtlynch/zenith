@@ -2,9 +2,9 @@ const std = @import("std");
 const vm = @import("evm/vm.zig");
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    const allocator = gpa.allocator();
-    defer _ = gpa.deinit();
+    var buffer: [2000]u8 = undefined;
+    var fba = std.heap.FixedBufferAllocator.init(&buffer);
+    const allocator = fba.allocator();
 
     const bytecode = try readStdin(allocator);
     defer allocator.free(bytecode);
