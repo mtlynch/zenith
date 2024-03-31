@@ -121,6 +121,16 @@ pub const VM = struct {
 
                 return true;
             },
+            opcodes.OpCode.CODESIZE => {
+                std.log.debug("{s}", .{@tagName(op)});
+
+                const length = try stream.getEndPos();
+                try self.stack.push(length);
+
+                self.gasConsumed += 2;
+
+                return true;
+            },
             opcodes.OpCode.POP => {
                 std.log.debug("{s}", .{
                     @tagName(op),
@@ -389,6 +399,36 @@ test "calculate a keccak hash of a 32-bit value twice" {
     const expectedGasConsumed = 102;
     const expectedStack = [_]u256{0xc05f009506ab1986a4bf586e65fdc9fbfc7004b07f136ab5378d89e8db9f43b5};
     const expectedMemory = [_]u256{0x29045a592007d0c246ef02c2223570da9522d0cf0f73282c79a1bc8f0bb2c238};
+    try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
+}
+
+test "check codesize of a single instruction" {
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(opcodes.OpCode.CODESIZE)
+    };
+    // zig fmt: on
+
+    const expectedReturnValue = [_]u8{};
+    const expectedGasConsumed = 2;
+    const expectedStack = [_]u256{0x01};
+    const expectedMemory = [_]u256{};
+    try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
+}
+
+test "check codesize of multiple instructions" {
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(opcodes.OpCode.PUSH32), 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        @intFromEnum(opcodes.OpCode.POP),
+        @intFromEnum(opcodes.OpCode.CODESIZE)
+    };
+    // zig fmt: on
+
+    const expectedReturnValue = [_]u8{};
+    const expectedGasConsumed = 3 + 2 + 2;
+    const expectedStack = [_]u256{1 + 32 + 1 + 1};
+    const expectedMemory = [_]u256{};
     try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
 }
 
