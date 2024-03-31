@@ -99,26 +99,25 @@ pub const VM = struct {
                 self.gasConsumed += 6 * wordCountRoundedUp;
 
                 const oldLength = self.memory.length();
-                const val = try self.memory.read(self.allocator, offset, size);
-                defer self.allocator.free(val);
+                const input = try self.memory.read(self.allocator, offset, size);
+                defer self.allocator.free(input);
                 const newLength = self.memory.length();
 
                 self.gasConsumed += memoryExpansionCost(oldLength, newLength);
 
-                std.log.debug("  Calcuating keccak256({any})", .{val});
+                std.log.debug("  Calcuating keccak256({any})", .{input});
 
                 const Keccak256 = std.crypto.hash.sha3.Keccak256;
-                var hash: [Keccak256.digest_length]u8 = undefined;
-                Keccak256.hash(val, &hash, .{});
+                var hashBytes: [Keccak256.digest_length]u8 = undefined;
+                Keccak256.hash(input, &hashBytes, .{});
 
-                std.debug.assert(hash.len == (256 / 8));
+                std.debug.assert(hashBytes.len == (256 / 8));
 
-                const val256 = std.mem.bytesToValue(u256, &hash);
-                const valBig = std.mem.nativeTo(u256, val256, std.builtin.Endian.Big);
+                const hashValue = std.mem.nativeTo(u256, std.mem.bytesToValue(u256, &hashBytes), std.builtin.Endian.Big);
 
                 self.gasConsumed += 30;
 
-                try self.stack.push(valBig);
+                try self.stack.push(hashValue);
 
                 return true;
             },
