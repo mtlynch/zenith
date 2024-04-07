@@ -82,6 +82,23 @@ pub const VM = struct {
 
                 return true;
             },
+            opcodes.OpCode.DIV => {
+                std.log.debug("{s}", .{@tagName(op)});
+
+                const a = try self.stack.pop();
+                const b = try self.stack.pop();
+
+                if (b == 0) {
+                    try self.stack.push(0);
+                } else {
+                    const c = a / b;
+                    try self.stack.push(c);
+                }
+
+                self.gasConsumed += 5;
+
+                return true;
+            },
             opcodes.OpCode.MUL => {
                 std.log.debug("{s}", .{@tagName(op)});
 
@@ -366,6 +383,70 @@ test "subtracting 1 from 0 should underflow to 2^256 - 1" {
     const expectedReturnValue = [_]u8{};
     const expectedGasConsumed = 9;
     const expectedStack = [_]u256{0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff};
+    const expectedMemory = [_]u256{};
+    try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
+}
+
+test "divide two bytes where there is no remainder" {
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x03,
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x06,
+        @intFromEnum(opcodes.OpCode.DIV),
+    };
+    // zig fmt: on
+
+    const expectedReturnValue = [_]u8{};
+    const expectedGasConsumed = 3 + 3 + 5;
+    const expectedStack = [_]u256{0x02};
+    const expectedMemory = [_]u256{};
+    try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
+}
+
+test "divide two bytes and round down the remainder" {
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x05,
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x09,
+        @intFromEnum(opcodes.OpCode.DIV),
+    };
+    // zig fmt: on
+
+    const expectedReturnValue = [_]u8{};
+    const expectedGasConsumed = 3 + 3 + 5;
+    const expectedStack = [_]u256{0x01};
+    const expectedMemory = [_]u256{};
+    try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
+}
+
+test "dividing any whole number by zero is zero" {
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x00,
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x06,
+        @intFromEnum(opcodes.OpCode.DIV),
+    };
+    // zig fmt: on
+
+    const expectedReturnValue = [_]u8{};
+    const expectedGasConsumed = 3 + 3 + 5;
+    const expectedStack = [_]u256{0x0};
+    const expectedMemory = [_]u256{};
+    try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
+}
+
+test "dividing zero by zero is zero" {
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x00,
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x00,
+        @intFromEnum(opcodes.OpCode.DIV),
+    };
+    // zig fmt: on
+
+    const expectedReturnValue = [_]u8{};
+    const expectedGasConsumed = 3 + 3 + 5;
+    const expectedStack = [_]u256{0x0};
     const expectedMemory = [_]u256{};
     try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
 }
