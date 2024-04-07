@@ -99,6 +99,27 @@ pub const VM = struct {
 
                 return true;
             },
+            opcodes.OpCode.SDIV => {
+                std.log.debug("{s}", .{@tagName(op)});
+
+                const aUnsigned = try self.stack.pop();
+                const bUnsigned = try self.stack.pop();
+
+                const a: i256 = @intCast(aUnsigned);
+                const b: i256 = @intCast(bUnsigned);
+
+                if (b == 0) {
+                    try self.stack.push(0);
+                } else {
+                    const cUnsigned = @divTrunc(a, b);
+                    const c: u256 = @intCast(cUnsigned);
+                    try self.stack.push(c);
+                }
+
+                self.gasConsumed += 5;
+
+                return true;
+            },
             opcodes.OpCode.MUL => {
                 std.log.debug("{s}", .{@tagName(op)});
 
@@ -441,6 +462,72 @@ test "dividing zero by zero is zero" {
         @intFromEnum(opcodes.OpCode.PUSH1), 0x00,
         @intFromEnum(opcodes.OpCode.PUSH1), 0x00,
         @intFromEnum(opcodes.OpCode.DIV),
+    };
+    // zig fmt: on
+
+    const expectedReturnValue = [_]u8{};
+    const expectedGasConsumed = 3 + 3 + 5;
+    const expectedStack = [_]u256{0x0};
+    const expectedMemory = [_]u256{};
+    try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
+}
+
+test "signed divide two bytes where there is no remainder" {
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x03,
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x06,
+        @intFromEnum(opcodes.OpCode.SDIV),
+    };
+    // zig fmt: on
+
+    const expectedReturnValue = [_]u8{};
+    const expectedGasConsumed = 3 + 3 + 5;
+    const expectedStack = [_]u256{0x02};
+    const expectedMemory = [_]u256{};
+    try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
+}
+
+test "signed divide a 32-bit number" {
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(opcodes.OpCode.PUSH32), 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        @intFromEnum(opcodes.OpCode.PUSH32), 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe,
+        @intFromEnum(opcodes.OpCode.SDIV),
+    };
+    // zig fmt: on
+
+    const expectedReturnValue = [_]u8{};
+    const expectedGasConsumed = 3 + 3 + 5;
+    const expectedStack = [_]u256{0x02};
+    const expectedMemory = [_]u256{};
+    try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
+}
+
+// TODO: Do 2^256 thing
+
+test "signed dividing any whole number by zero is zero" {
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x00,
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x06,
+        @intFromEnum(opcodes.OpCode.SDIV),
+    };
+    // zig fmt: on
+
+    const expectedReturnValue = [_]u8{};
+    const expectedGasConsumed = 3 + 3 + 5;
+    const expectedStack = [_]u256{0x0};
+    const expectedMemory = [_]u256{};
+    try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
+}
+
+test "signed dividing zero by zero is zero" {
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x00,
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x00,
+        @intFromEnum(opcodes.OpCode.SDIV),
     };
     // zig fmt: on
 
