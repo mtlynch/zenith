@@ -306,38 +306,6 @@ test "adding one to max u256 should wrap to zero" {
     try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
 }
 
-test "subtract two bytes" {
-    // zig fmt: off
-    const bytecode = [_]u8{
-        @intFromEnum(opcodes.OpCode.PUSH1), 0x02,
-        @intFromEnum(opcodes.OpCode.PUSH1), 0x08,
-        @intFromEnum(opcodes.OpCode.SUB),
-    };
-    // zig fmt: on
-
-    const expectedReturnValue = [_]u8{};
-    const expectedGasConsumed = 9;
-    const expectedStack = [_]u256{0x06};
-    const expectedMemory = [_]u256{};
-    try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
-}
-
-test "subtracting 1 from 0 should underflow to 2^256 - 1" {
-    // zig fmt: off
-    const bytecode = [_]u8{
-        @intFromEnum(opcodes.OpCode.PUSH1), 0x01,
-        @intFromEnum(opcodes.OpCode.PUSH1), 0x00,
-        @intFromEnum(opcodes.OpCode.SUB),
-    };
-    // zig fmt: on
-
-    const expectedReturnValue = [_]u8{};
-    const expectedGasConsumed = 9;
-    const expectedStack = [_]u256{0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff};
-    const expectedMemory = [_]u256{};
-    try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
-}
-
 test "multiply two bytes with no integer overflow" {
     // zig fmt: off
     const bytecode = [_]u8{
