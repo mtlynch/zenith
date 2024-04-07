@@ -6,6 +6,7 @@ pub const OpCode = enum(u8) {
     STOP = evmc.OP_STOP,
     ADD = evmc.OP_ADD,
     MUL = evmc.OP_MUL,
+    SUB = evmc.OP_SUB,
     MOD = evmc.OP_MOD,
     ISZERO = evmc.OP_ISZERO,
     KECCAK256 = evmc.OP_KECCAK256,

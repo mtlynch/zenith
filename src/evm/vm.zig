@@ -68,6 +68,20 @@ pub const VM = struct {
 
                 return true;
             },
+            opcodes.OpCode.SUB => {
+                std.log.debug("{s}", .{@tagName(op)});
+
+                const a = try self.stack.pop();
+                const b = try self.stack.pop();
+
+                const c = a -% b;
+
+                try self.stack.push(c);
+
+                self.gasConsumed += 3;
+
+                return true;
+            },
             opcodes.OpCode.MUL => {
                 std.log.debug("{s}", .{@tagName(op)});
 
@@ -320,6 +334,38 @@ test "multiply two bytes and allow integer overflow" {
     const expectedReturnValue = [_]u8{};
     const expectedGasConsumed = 3 + 3 + 5;
     const expectedStack = [_]u256{0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe};
+    const expectedMemory = [_]u256{};
+    try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
+}
+
+test "subtract two bytes" {
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x02,
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x08,
+        @intFromEnum(opcodes.OpCode.SUB),
+    };
+    // zig fmt: on
+
+    const expectedReturnValue = [_]u8{};
+    const expectedGasConsumed = 9;
+    const expectedStack = [_]u256{0x06};
+    const expectedMemory = [_]u256{};
+    try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
+}
+
+test "subtracting 1 from 0 should underflow to 2^256 - 1" {
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x01,
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x00,
+        @intFromEnum(opcodes.OpCode.SUB),
+    };
+    // zig fmt: on
+
+    const expectedReturnValue = [_]u8{};
+    const expectedGasConsumed = 9;
+    const expectedStack = [_]u256{0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff};
     const expectedMemory = [_]u256{};
     try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
 }
