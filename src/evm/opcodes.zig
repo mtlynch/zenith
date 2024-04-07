@@ -5,6 +5,7 @@ const evmc = @cImport({
 pub const OpCode = enum(u8) {
     STOP = evmc.OP_STOP,
     ADD = evmc.OP_ADD,
+    SUB = evmc.OP_SUB,
     MUL = evmc.OP_MUL,
     SUB = evmc.OP_SUB,
     MOD = evmc.OP_MOD,
