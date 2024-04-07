@@ -507,15 +507,42 @@ test "signed divide a 32-bit number" {
 test "signed divide a negative number by a positive number is a negative number" {
     // zig fmt: off
     const bytecode = [_]u8{
-        @intFromEnum(opcodes.OpCode.PUSH32), 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-        @intFromEnum(opcodes.OpCode.PUSH32), 0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        @intFromEnum(opcodes.OpCode.PUSH1), 5,
+        // Push -25 onto stack
+        @intFromEnum(opcodes.OpCode.PUSH1), 25,
+        @intFromEnum(opcodes.OpCode.PUSH1), 0,
+        @intFromEnum(opcodes.OpCode.SUB),
+        // -25 / 5
         @intFromEnum(opcodes.OpCode.SDIV),
     };
     // zig fmt: on
 
     const expectedReturnValue = [_]u8{};
-    const expectedGasConsumed = 3 + 3 + 5;
-    const expectedStack = [_]u256{0x8000000000000000000000000000000000000000000000000000000000000001};
+    const expectedGasConsumed = 3 + 3 + 3 + 3 + 5;
+    const expectedStack = [_]u256{@bitCast(@as(i256, -5))};
+    const expectedMemory = [_]u256{};
+    try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
+}
+
+test "signed divide a negative number by a negative number is a positive number" {
+    // zig fmt: off
+    const bytecode = [_]u8{
+        // Push -5 onto stack
+        @intFromEnum(opcodes.OpCode.PUSH1), 5,
+        @intFromEnum(opcodes.OpCode.PUSH1), 0,
+        @intFromEnum(opcodes.OpCode.SUB),
+        // Push -25 onto stack
+        @intFromEnum(opcodes.OpCode.PUSH1), 25,
+        @intFromEnum(opcodes.OpCode.PUSH1), 0,
+        @intFromEnum(opcodes.OpCode.SUB),
+        // -25 / -5
+        @intFromEnum(opcodes.OpCode.SDIV),
+    };
+    // zig fmt: on
+
+    const expectedReturnValue = [_]u8{};
+    const expectedGasConsumed = (3 + 3 + 3) + (3 + 3 + 3) + 5;
+    const expectedStack = [_]u256{0x05};
     const expectedMemory = [_]u256{};
     try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
 }
