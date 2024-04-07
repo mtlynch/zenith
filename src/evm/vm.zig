@@ -105,14 +105,14 @@ pub const VM = struct {
                 const aUnsigned = try self.stack.pop();
                 const bUnsigned = try self.stack.pop();
 
-                const a: i256 = @intCast(aUnsigned);
-                const b: i256 = @intCast(bUnsigned);
+                const a: i256 = @bitCast(aUnsigned);
+                const b: i256 = @bitCast(bUnsigned);
 
                 if (b == 0) {
                     try self.stack.push(0);
                 } else {
                     const cUnsigned = @divTrunc(a, b);
-                    const c: u256 = @intCast(cUnsigned);
+                    const c: u256 = @bitCast(cUnsigned);
                     try self.stack.push(c);
                 }
 
@@ -504,7 +504,21 @@ test "signed divide a 32-bit number" {
     try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
 }
 
-// TODO: Do 2^256 thing
+test "signed divide a negative number by a positive number is a negative number" {
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(opcodes.OpCode.PUSH32), 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        @intFromEnum(opcodes.OpCode.PUSH32), 0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        @intFromEnum(opcodes.OpCode.SDIV),
+    };
+    // zig fmt: on
+
+    const expectedReturnValue = [_]u8{};
+    const expectedGasConsumed = 3 + 3 + 5;
+    const expectedStack = [_]u256{0x8000000000000000000000000000000000000000000000000000000000000001};
+    const expectedMemory = [_]u256{};
+    try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
+}
 
 test "signed dividing any whole number by zero is zero" {
     // zig fmt: off
