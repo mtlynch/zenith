@@ -20,7 +20,13 @@ pub fn parseTokens(tokens: []const [:0]const u8, allocator: std.mem.Allocator) !
         } else {
             switch (current_opcode) {
                 evm.OpCode.PUSH1 => {
-                    const value = try parseValue(u8, token);
+                    const value = v: {
+                        if (std.mem.startsWith(u8, token, "-")) {
+                            break :v @as(u8, @bitCast(try parseValue(i8, token)));
+                        } else {
+                            break :v try parseValue(u8, token);
+                        }
+                    };
                     try bytecode.append(value);
                 },
                 evm.OpCode.PUSH32 => {
@@ -91,6 +97,13 @@ test "parse PUSH1 call as hex" {
 test "parse PUSH1 call as decimal" {
     const tokens = [_][:0]const u8{ "PUSH1", "1" };
     const expected = [_]u8{ @intFromEnum(evm.OpCode.PUSH1), 0x01 };
+
+    try testParseTokens(&tokens, &expected);
+}
+
+test "parse PUSH1 call as negative decimal" {
+    const tokens = [_][:0]const u8{ "PUSH1", "-1" };
+    const expected = [_]u8{ @intFromEnum(evm.OpCode.PUSH1), 0xFF };
 
     try testParseTokens(&tokens, &expected);
 }
