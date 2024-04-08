@@ -263,6 +263,15 @@ fn memoryExpansionCost(oldLength: usize, newLength: usize) u64 {
     return @as(u64, memoryLengthToStateSize(newLength) - memoryLengthToStateSize(oldLength));
 }
 
+fn expectGasConsumed(expected: u64, actual: u64) !void {
+    if (expected == actual) {
+        return;
+    }
+    std.debug.print("incorrect gas consumed\n", .{});
+    std.debug.print("expected {d} gas, found {d} gas\n", .{ expected, actual });
+    return error.TestExpectedEqual;
+}
+
 fn testBytecode(bytecode: []const u8, expectedReturnValue: []const u8, expectedGasConsumed: u64, expectedStack: []const u256, expectedMemory: []const u256) !void {
     const allocator = std.testing.allocator;
 
@@ -273,7 +282,7 @@ fn testBytecode(bytecode: []const u8, expectedReturnValue: []const u8, expectedG
     try vm.run(bytecode);
 
     try std.testing.expectEqualSlices(u8, expectedReturnValue, vm.returnValue);
-    try std.testing.expectEqual(expectedGasConsumed, vm.gasConsumed);
+    try expectGasConsumed(expectedGasConsumed, vm.gasConsumed);
     try std.testing.expectEqualSlices(u256, expectedStack, vm.stack.slice());
     try std.testing.expectEqualSlices(u256, expectedMemory, vm.memory.slice());
 }
