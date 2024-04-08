@@ -12,13 +12,13 @@ pub fn parseTokens(tokens: []const [:0]const u8, allocator: std.mem.Allocator) !
 
     // We don't parse very rigorously. We assume well-formed input. We generate
     // bytecode even when the token sequences are invalid (e.g., PUSH1 0x1 0x2).
-    var currentOpCode: evm.OpCode = undefined;
+    var current_opcode: evm.OpCode = undefined;
     for (tokens) |token| {
         if (parseOpcode(token)) |opcode| {
-            currentOpCode = opcode;
+            current_opcode = opcode;
             try bytecode.append(@intFromEnum(opcode));
         } else {
-            switch (currentOpCode) {
+            switch (current_opcode) {
                 evm.OpCode.PUSH1 => {
                     const value = try parseValue(u8, token);
                     try bytecode.append(value);

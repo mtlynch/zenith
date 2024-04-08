@@ -5,10 +5,10 @@ pub fn tokenize(reader: anytype, allocator: std.mem.Allocator) ![][:0]const u8 {
     defer tokens.deinit();
 
     var buf = std.io.bufferedReader(reader);
-    var bufReader = buf.reader();
+    var buf_reader = buf.reader();
 
-    var lineBuf: [1024]u8 = undefined;
-    while (try bufReader.readUntilDelimiterOrEof(&lineBuf, '\n')) |line| {
+    var line_buf: [1024]u8 = undefined;
+    while (try buf_reader.readUntilDelimiterOrEof(&line_buf, '\n')) |line| {
         // Skip lines that start with "//"
         if (std.mem.startsWith(u8, line, "//")) {
             continue;
@@ -26,7 +26,7 @@ pub fn tokenize(reader: anytype, allocator: std.mem.Allocator) ![][:0]const u8 {
     return tokens.toOwnedSlice();
 }
 
-fn testTokenize(input: [:0]const u8, expectedTokens: []const [:0]const u8) !void {
+fn testTokenize(input: [:0]const u8, expected_tokens: []const [:0]const u8) !void {
     var stream = std.io.fixedBufferStream(input);
     var reader = stream.reader();
 
@@ -40,8 +40,8 @@ fn testTokenize(input: [:0]const u8, expectedTokens: []const [:0]const u8) !void
         allocator.free(tokens);
     }
 
-    try std.testing.expectEqual(expectedTokens.len, tokens.len);
-    for (expectedTokens, 0..) |expected, i| {
+    try std.testing.expectEqual(expected_tokens.len, tokens.len);
+    for (expected_tokens, 0..) |expected, i| {
         try std.testing.expectEqualStrings(expected, tokens[i]);
     }
 }
@@ -49,19 +49,19 @@ fn testTokenize(input: [:0]const u8, expectedTokens: []const [:0]const u8) !void
 test "tokenize a single word" {
     const input = "RETURN";
 
-    const expectedTokens = [_][:0]const u8{
+    const expected_tokens = [_][:0]const u8{
         "RETURN",
     };
 
-    try testTokenize(input, &expectedTokens);
+    try testTokenize(input, &expected_tokens);
 }
 
 test "tokenize a multi-word line" {
     const input = "PUSH1 0x01";
 
-    const expectedTokens = [_][:0]const u8{ "PUSH1", "0x01" };
+    const expected_tokens = [_][:0]const u8{ "PUSH1", "0x01" };
 
-    try testTokenize(input, &expectedTokens);
+    try testTokenize(input, &expected_tokens);
 }
 
 test "tokenize a multi-line input" {
@@ -70,9 +70,9 @@ test "tokenize a multi-line input" {
         \\RETURN
     ;
 
-    const expectedTokens = [_][:0]const u8{ "PUSH1", "0x01", "RETURN" };
+    const expected_tokens = [_][:0]const u8{ "PUSH1", "0x01", "RETURN" };
 
-    try testTokenize(input, &expectedTokens);
+    try testTokenize(input, &expected_tokens);
 }
 
 test "ignores lines starting with //" {
@@ -83,9 +83,9 @@ test "ignores lines starting with //" {
         \\RETURN
     ;
 
-    const expectedTokens = [_][:0]const u8{ "PUSH1", "0x01", "RETURN" };
+    const expected_tokens = [_][:0]const u8{ "PUSH1", "0x01", "RETURN" };
 
-    try testTokenize(input, &expectedTokens);
+    try testTokenize(input, &expected_tokens);
 }
 
 test "treats multiple spaces the same as a single space" {
@@ -97,7 +97,7 @@ test "treats multiple spaces the same as a single space" {
         \\
     ;
 
-    const expectedTokens = [_][:0]const u8{ "PUSH1", "0x01", "RETURN" };
+    const expected_tokens = [_][:0]const u8{ "PUSH1", "0x01", "RETURN" };
 
-    try testTokenize(input, &expectedTokens);
+    try testTokenize(input, &expected_tokens);
 }
