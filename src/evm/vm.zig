@@ -294,7 +294,7 @@ test "exit after pushing two values to stack" {
     // zig fmt: on
 
     const expectedReturnValue = [_]u8{};
-    const expectedGasConsumed = 6 + 88;
+    const expectedGasConsumed = 6;
     const expectedStack = [_]u256{ 0x02, 0x01 };
     const expectedMemory = [_]u256{};
     try testBytecode(&bytecode, &expectedReturnValue, expectedGasConsumed, &expectedStack, &expectedMemory);
