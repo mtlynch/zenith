@@ -102,17 +102,13 @@ pub const VM = struct {
             opcodes.OpCode.SDIV => {
                 std.log.debug("{s}", .{@tagName(op)});
 
-                const aUnsigned = try self.stack.pop();
-                const bUnsigned = try self.stack.pop();
-
-                const a: i256 = @bitCast(aUnsigned);
-                const b: i256 = @bitCast(bUnsigned);
+                const a: i256 = @bitCast(try self.stack.pop());
+                const b: i256 = @bitCast(try self.stack.pop());
 
                 if (b == 0) {
                     try self.stack.push(0);
                 } else {
-                    const cUnsigned = @divTrunc(a, b);
-                    const c: u256 = @bitCast(cUnsigned);
+                    const c: u256 = @bitCast(@divTrunc(a, b));
                     try self.stack.push(c);
                 }
 
