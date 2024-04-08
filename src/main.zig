@@ -20,10 +20,10 @@ pub fn main() !void {
     const elapsed_micros = @as(f64, @floatFromInt(end - start)) / std.time.ns_per_us;
 
     const output = std.io.getStdOut().writer();
-    try output.print("EVM gas used:    {}\n", .{evm.gasConsumed});
+    try output.print("EVM gas used:    {}\n", .{evm.gas_consumed});
     try output.print("execution time:  {d:.3}µs\n", .{elapsed_micros});
-    if (evm.returnValue.len > 0) {
-        try output.print("0x{}\n", .{std.fmt.fmtSliceHexLower(evm.returnValue)});
+    if (evm.return_value.len > 0) {
+        try output.print("0x{}\n", .{std.fmt.fmtSliceHexLower(evm.return_value)});
     } else {
         // Match evm behavior by outputting a blank line when there is no return value.
         try output.print("\n", .{});
