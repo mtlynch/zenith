@@ -15,8 +15,8 @@ pub fn main() !void {
         return;
     }
 
-    const infilePath = args[1];
-    const infile = try std.fs.cwd().openFile(infilePath, .{});
+    const infile_path = args[1];
+    const infile = try std.fs.cwd().openFile(infile_path, .{});
     defer infile.close();
 
     const tokens = try tokenizer.tokenize(infile.reader(), allocator);
@@ -30,8 +30,8 @@ pub fn main() !void {
     const bytecode = try parser.parseTokens(tokens, allocator);
     defer allocator.free(bytecode);
 
-    const outfilePath = args[2];
-    const outfile = try std.fs.cwd().createFile(outfilePath, .{});
+    const outfile_path = args[2];
+    const outfile = try std.fs.cwd().createFile(outfile_path, .{});
     defer outfile.close();
 
     var buf: []u8 = try allocator.alloc(u8, bytecode.len * 2);
