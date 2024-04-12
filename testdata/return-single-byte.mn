@@ -1,6 +1,9 @@
+// Store 0x01 in memory as a 32-byte word.
 PUSH1 0x01
 PUSH1 0x00
 MSTORE
+
+// Return 1 byte from offset 31 in memory.
 PUSH1 0x01
 PUSH1 0x1f
 RETURN
