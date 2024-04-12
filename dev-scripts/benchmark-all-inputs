@@ -17,7 +17,7 @@ readonly VM_BINARY="$1"
 readonly ITERATIONS="$2"
 
 readonly TESTDATA_FOLDER="testdata/bytecode"
-readonly BYTECODE_EXTENSION='.bytecode'
+readonly BYTECODE_EXTENSION='.b'
 
 readonly BENCHMARK_FOLDER='benchmarks'
 readonly BENCHMARK_EXTENSION='.benchmark'
