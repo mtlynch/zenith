@@ -18,7 +18,7 @@ readonly BYTECODE_OUTPUT_FOLDER="${TESTDATA_FOLDER}/bytecode"
 
 mkdir -p "${BYTECODE_OUTPUT_FOLDER}"
 
-readonly MNEMONIC_EXTENSION='.mnemonic'
+readonly MNEMONIC_EXTENSION='.mn'
 
 pushd "${TESTDATA_FOLDER}" > /dev/null
 
