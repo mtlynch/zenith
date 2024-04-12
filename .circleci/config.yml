@@ -38,7 +38,7 @@ jobs:
       - persist_to_workspace:
           root: ./
           paths:
-            - ./testdata/bytecode/*.bytecode
+            - ./testdata/bytecode/*.b
   benchmark:
     executor: nix
     steps:

@@ -131,7 +131,7 @@ make_keccak256_100_rounds
 
 popd > /dev/null
 
-readonly BYTECODE_EXTENSION='.bytecode'
+readonly BYTECODE_EXTENSION='.b'
 
 for test_name in "${test_files[@]}"; do
   input_file="${TESTDATA_FOLDER}/${test_name}${MNEMONIC_EXTENSION}"
