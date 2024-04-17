@@ -151,6 +151,14 @@ pub const VM = struct {
                 try self.stack.push(is_zero);
                 return true;
             },
+            opcodes.OpCode.NOT => {
+                std.log.debug("{s}", .{@tagName(op)});
+                self.gas_consumed += 3;
+                const val = try self.stack.pop();
+                const negated = ~val;
+                try self.stack.push(negated);
+                return true;
+            },
             opcodes.OpCode.KECCAK256 => {
                 std.log.debug("{s}", .{@tagName(op)});
 
@@ -642,6 +650,51 @@ test "verify seven is not zero" {
     const expected_return_value = [_]u8{};
     const expected_gas_consumed = 6;
     const expected_stack = [_]u256{0x00};
+    const expected_memory = [_]u256{};
+    try testBytecode(&bytecode, &expected_return_value, expected_gas_consumed, &expected_stack, &expected_memory);
+}
+
+test "bitwise not flips all bits of zero" {
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x00,
+        @intFromEnum(opcodes.OpCode.NOT),
+    };
+    // zig fmt: on
+
+    const expected_return_value = [_]u8{};
+    const expected_gas_consumed = 3 + 3;
+    const expected_stack = [_]u256{0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff};
+    const expected_memory = [_]u256{};
+    try testBytecode(&bytecode, &expected_return_value, expected_gas_consumed, &expected_stack, &expected_memory);
+}
+
+test "bitwise not flips all 1 bits to 0" {
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(opcodes.OpCode.PUSH32), 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        @intFromEnum(opcodes.OpCode.NOT),
+    };
+    // zig fmt: on
+
+    const expected_return_value = [_]u8{};
+    const expected_gas_consumed = 3 + 3;
+    const expected_stack = [_]u256{0x00};
+    const expected_memory = [_]u256{};
+    try testBytecode(&bytecode, &expected_return_value, expected_gas_consumed, &expected_stack, &expected_memory);
+}
+
+test "bitwise not flips all 1 bits to 0 in mixed values" {
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(opcodes.OpCode.PUSH32), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xf0,
+        @intFromEnum(opcodes.OpCode.NOT),
+    };
+    // zig fmt: on
+
+    const expected_return_value = [_]u8{};
+    const expected_gas_consumed = 3 + 3;
+    const expected_stack = [_]u256{0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0f};
     const expected_memory = [_]u256{};
     try testBytecode(&bytecode, &expected_return_value, expected_gas_consumed, &expected_stack, &expected_memory);
 }
