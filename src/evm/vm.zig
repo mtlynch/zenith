@@ -143,6 +143,22 @@ pub const VM = struct {
                 try self.stack.push(c);
                 return true;
             },
+            opcodes.OpCode.SMOD => {
+                std.log.debug("{s}", .{@tagName(op)});
+                self.gas_consumed += 5;
+
+                const a: i256 = @bitCast(try self.stack.pop());
+                const b: i256 = @bitCast(try self.stack.pop());
+                if (b == 0) {
+                    try self.stack.push(0);
+                    return true;
+                }
+
+                const c: u256 = @bitCast(@mod(a, b));
+                try self.stack.push(c);
+
+                return true;
+            },
             opcodes.OpCode.ISZERO => {
                 std.log.debug("{s}", .{@tagName(op)});
                 self.gas_consumed += 3;
@@ -619,6 +635,54 @@ test "anything mod 0 is 0" {
 
     const expected_return_value = [_]u8{};
     const expected_gas_consumed = 11;
+    const expected_stack = [_]u256{0x00};
+    const expected_memory = [_]u256{};
+    try testBytecode(&bytecode, &expected_return_value, expected_gas_consumed, &expected_stack, &expected_memory);
+}
+
+test "17 signed modulus 5 is 2" {
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x05,
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x11,
+        @intFromEnum(opcodes.OpCode.SMOD),
+    };
+    // zig fmt: on
+
+    const expected_return_value = [_]u8{};
+    const expected_gas_consumed = 3 + 3 + 5;
+    const expected_stack = [_]u256{0x02};
+    const expected_memory = [_]u256{};
+    try testBytecode(&bytecode, &expected_return_value, expected_gas_consumed, &expected_stack, &expected_memory);
+}
+
+test "-8 signed modulus -3 is -2" {
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(opcodes.OpCode.PUSH32), 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfd,
+        @intFromEnum(opcodes.OpCode.PUSH32), 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xf8,
+        @intFromEnum(opcodes.OpCode.SMOD),
+    };
+    // zig fmt: on
+
+    const expected_return_value = [_]u8{};
+    const expected_gas_consumed = 3 + 3 + 5;
+    const expected_stack = [_]u256{0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe};
+    const expected_memory = [_]u256{};
+    try testBytecode(&bytecode, &expected_return_value, expected_gas_consumed, &expected_stack, &expected_memory);
+}
+
+test "anything signed mod 0 is 0" {
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x00,
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x11,
+        @intFromEnum(opcodes.OpCode.SMOD),
+    };
+    // zig fmt: on
+
+    const expected_return_value = [_]u8{};
+    const expected_gas_consumed = 3 + 3 + 5;
     const expected_stack = [_]u256{0x00};
     const expected_memory = [_]u256{};
     try testBytecode(&bytecode, &expected_return_value, expected_gas_consumed, &expected_stack, &expected_memory);

@@ -10,6 +10,7 @@ pub const OpCode = enum(u8) {
     DIV = evmc.OP_DIV,
     SDIV = evmc.OP_SDIV,
     MOD = evmc.OP_MOD,
+    SMOD = evmc.OP_SMOD,
     ISZERO = evmc.OP_ISZERO,
     NOT = evmc.OP_NOT,
     KECCAK256 = evmc.OP_KECCAK256,
