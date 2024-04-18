@@ -58,10 +58,10 @@ make_count_to_1k_test() {
   done
 
   cat >> "${FILENAME}" << EOL
-PUSH1 0x00
+PUSH0
 MSTORE
 PUSH1 0x20
-PUSH1 0x00
+PUSH0
 RETURN
 EOL
 
@@ -90,10 +90,10 @@ make_count_to_100k_test() {
   done
 
   cat >> "${FILENAME}" << EOL
-PUSH1 0x00
+PUSH0
 MSTORE
 PUSH1 0x20
-PUSH1 0x00
+PUSH0
 RETURN
 EOL
 
@@ -117,10 +117,10 @@ make_keccak256_100_rounds() {
   # Get near the limit of the stack depth.
   for ((i=1; i<=100; i++)); do
         cat >> "${FILENAME}" << EOL
-PUSH1 0x00
+PUSH0
 MSTORE
 PUSH1 0x20
-PUSH1 0x00
+PUSH0
 KECCAK256
 EOL
   done

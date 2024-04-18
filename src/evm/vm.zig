@@ -226,6 +226,15 @@ pub const VM = struct {
                 self.gas_consumed += 2;
                 return true;
             },
+            opcodes.OpCode.PUSH0 => {
+                std.log.debug("{s}", .{@tagName(op)});
+
+                self.gas_consumed += 2;
+
+                _ = try self.stack.push(0);
+
+                return true;
+            },
             opcodes.OpCode.PUSH1 => {
                 const b = try reader.readByte();
                 std.log.debug("{s} 0x{x:0>2}", .{ @tagName(op), b });
@@ -321,6 +330,20 @@ test "exit immediately" {
     const expected_return_value = [_]u8{};
     const expected_gas_consumed = 0;
     const expected_stack = [_]u256{};
+    const expected_memory = [_]u256{};
+    try testBytecode(&bytecode, &expected_return_value, expected_gas_consumed, &expected_stack, &expected_memory);
+}
+
+test "push zero to stack with PUSH0" {
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(opcodes.OpCode.PUSH0),
+    };
+    // zig fmt: on
+
+    const expected_return_value = [_]u8{};
+    const expected_gas_consumed = 2;
+    const expected_stack = [_]u256{0x00};
     const expected_memory = [_]u256{};
     try testBytecode(&bytecode, &expected_return_value, expected_gas_consumed, &expected_stack, &expected_memory);
 }
