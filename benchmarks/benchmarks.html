@@ -89,14 +89,14 @@
 
         function populateGraph(graphId) {
         const ctx = document.getElementById(graphId);
-          const ethZvmPromise = getBenchmarks(`eth-zvm_${graphId}.benchmark`);
+          const zenithPromise = getBenchmarks(`zenith_${graphId}.benchmark`);
         const evmPromise = getBenchmarks(`evm_${graphId}.benchmark`);
 
-        Promise.all([ethZvmPromise, evmPromise]).then((values) => {
+        Promise.all([zenithPromise, evmPromise]).then((values) => {
           new Chart(ctx, {
             type: "bar",
             data: {
-              labels: ["eth-zvm (Zig)", "evm (Go)"],
+              labels: ["zenith (Zig)", "evm (Go)"],
               datasets: [
                 {
                   label: "Runtime (µs)",
