@@ -1,5 +1,5 @@
 {
-  description = "Dev environment for eth-zvm";
+  description = "Dev environment for zenith";
 
   inputs = {
     flake-utils.url = "github:numtide/flake-utils";
