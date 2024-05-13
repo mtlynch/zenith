@@ -49,12 +49,12 @@ jobs:
       - attach_workspace:
           at: ./
       - run:
-          name: Benchmark eth-zvm
+          name: Benchmark zenith
           command: |
             nix develop --command bash -c \
               'zig build -Doptimize=ReleaseFast --verbose'
             nix develop --command bash -c \
-              'dev-scripts/benchmark-all-inputs ./zig-out/bin/eth-zvm 30'
+              'dev-scripts/benchmark-all-inputs ./zig-out/bin/zenith 30'
       - persist_to_workspace:
           root: ./
           paths:
