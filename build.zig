@@ -8,6 +8,7 @@ pub fn build(b: *std.Build) void {
     const evm_module = b.createModule(.{
         .root_source_file = .{ .path = "src/evm/opcodes.zig" },
     });
+    evm_module.addIncludePath(.{ .path = evmc_include_path });
 
     const exe = b.addExecutable(.{
         .name = "zenith",
