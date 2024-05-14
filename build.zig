@@ -24,7 +24,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-    mnemonic_exe.addModule("evm", evm_module);
+    mnemonic_exe.root_module.addImport("evm", evm_module);
     mnemonic_exe.addIncludePath(.{ .path = evmc_include_path });
     b.installArtifact(mnemonic_exe);
 
@@ -51,7 +51,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-    mnc_unit_tests.addModule("evm", evm_module);
+    mnc_unit_tests.root_module.addImport("evm", evm_module);
     mnc_unit_tests.addIncludePath(.{ .path = evmc_include_path });
 
     const run_mnc_unit_tests = b.addRunArtifact(mnc_unit_tests);
