@@ -7,8 +7,8 @@
     # 0.12.0
     zls_dep.url = "github:NixOS/nixpkgs/5fd8536a9a5932d4ae8de52b7dc08d92041237fc";
 
-    # 0.12.0
-    zig_dep.url = "github:NixOS/nixpkgs/5fd8536a9a5932d4ae8de52b7dc08d92041237fc";
+    # 0.13.0
+    zig_dep.url = "github:NixOS/nixpkgs/ed0af8c19f55bede71dc9c2002185cf228339901";
   };
 
   outputs = { self, flake-utils, zig_dep, zls_dep }@inputs :
