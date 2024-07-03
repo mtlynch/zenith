@@ -51,7 +51,7 @@ pub fn parseTokens(tokens: []const [:0]const u8, allocator: std.mem.Allocator) !
 
 fn parseOpcode(val: [:0]const u8) ?evm.OpCode {
     // Reverse OpCode enums into a map of int values to enums.
-    const keywords = std.ComptimeStringMap(evm.OpCode, comptime build_kvs: {
+    const keywords = std.StaticStringMap(evm.OpCode).initComptime(build_kvs: {
         const KV = struct { []const u8, evm.OpCode };
         var kvs_array: [std.meta.fields(evm.OpCode).len]KV = undefined;
         for (std.meta.fields(evm.OpCode), 0..) |enumField, i| {
