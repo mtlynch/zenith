@@ -8,7 +8,7 @@ pub fn build(b: *std.Build) void {
     const evm_module = b.createModule(.{
         .root_source_file = b.path("src/evm/opcodes.zig"),
     });
-    evm_module.addIncludePath(.{ .src_path = evmc_include_path.src_path });
+    evm_module.addIncludePath(evmc_include_path);
 
     const exe = b.addExecutable(.{
         .name = "zenith",
@@ -16,17 +16,17 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-    exe.addIncludePath(.{ .src_path = evmc_include_path.src_path });
+    exe.addIncludePath(evmc_include_path);
     b.installArtifact(exe);
 
     const mnemonic_exe = b.addExecutable(.{
         .name = "mnc",
-        .root_source_file = .{ .src_path = b.path("src/mnemonic-compiler/main.zig").src_path },
+        .root_source_file = b.path("src/mnemonic-compiler/main.zig"),
         .target = target,
         .optimize = optimize,
     });
     mnemonic_exe.root_module.addImport("evm", evm_module);
-    mnemonic_exe.addIncludePath(.{ .src_path = evmc_include_path.src_path });
+    mnemonic_exe.addIncludePath(evmc_include_path);
     b.installArtifact(mnemonic_exe);
 
     const run_cmd = b.addRunArtifact(exe);
@@ -40,20 +40,20 @@ pub fn build(b: *std.Build) void {
     run_step.dependOn(&run_cmd.step);
 
     const unit_tests = b.addTest(.{
-        .root_source_file = .{ .src_path = b.path("src/main.zig").src_path },
+        .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
     });
-    unit_tests.addIncludePath(.{ .src_path = evmc_include_path.src_path });
+    unit_tests.addIncludePath(evmc_include_path);
     const run_unit_tests = b.addRunArtifact(unit_tests);
 
     const mnc_unit_tests = b.addTest(.{
-        .root_source_file = .{ .src_path = b.path("src/mnemonic-compiler/main.zig").src_path },
+        .root_source_file = b.path("src/mnemonic-compiler/main.zig"),
         .target = target,
         .optimize = optimize,
     });
     mnc_unit_tests.root_module.addImport("evm", evm_module);
-    mnc_unit_tests.addIncludePath(.{ .src_path = evmc_include_path.src_path });
+    mnc_unit_tests.addIncludePath(evmc_include_path);
 
     const run_mnc_unit_tests = b.addRunArtifact(mnc_unit_tests);
 
