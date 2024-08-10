@@ -12,7 +12,7 @@ set -x
 # Fail when piped commands fail.
 set -o pipefail
 
-GETH_VERSION='1.13.12-02eb36af'
+GETH_VERSION='1.14.7-aa55f5ea'
 VERSION_BASE="geth-alltools-linux-amd64-${GETH_VERSION}"
 
 curl --location "https://gethstore.blob.core.windows.net/builds/${VERSION_BASE}.tar.gz" \
