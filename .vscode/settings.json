@@ -1,5 +1,5 @@
 {
-  "zig.zls.path": "/nix/store/jy59c1m1rlfrzl8baqld494xdbxhwr4b-zls-0.12.0/bin/zls",
+  "zig.zls.path": "/nix/store/jfkh7gsj543gjh69zl3l8qypyw7937nc-zls-0.13.0/bin/zls",
   "zig.path": "/nix/store/580ifd6zgicd64454fg7bhaa2i78lvm1-zig-0.12.0/bin/zig",
   "editor.inlayHints.enabled": "offUnlessPressed"
 }
