@@ -271,6 +271,19 @@ pub const VM = struct {
 
                 return true;
             },
+            opcodes.OpCode.SWAP1 => {
+                std.log.debug("{s}", .{@tagName(op)});
+
+                const a = try self.stack.pop();
+                const b = try self.stack.pop();
+
+                try self.stack.push(a);
+                try self.stack.push(b);
+
+                self.gas_consumed += 3;
+
+                return true;
+            },
             opcodes.OpCode.RETURN => {
                 std.log.debug("{s}", .{@tagName(op)});
                 const offset = try self.stack.pop();
@@ -975,6 +988,22 @@ test "use pc to measure program counter" {
     const expected_return_value = [_]u8{};
     const expected_gas_consumed = (4 * 2) + (3 * 2);
     const expected_stack = [_]u256{ 0x00, 0x01, 0xaa, 0x04, 0x00000000000000000000000000000000000000000000000000000000000000bb, 4 + 1 + 1 + 32 };
+    const expected_memory = [_]u256{};
+    try testBytecode(&bytecode, &expected_return_value, expected_gas_consumed, &expected_stack, &expected_memory);
+}
+
+test "push two bytes and swap them" {
+    // zig fmt: off
+    const bytecode = [_]u8{
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x06,
+        @intFromEnum(opcodes.OpCode.PUSH1), 0x08,
+        @intFromEnum(opcodes.OpCode.SWAP1),
+    };
+    // zig fmt: on
+
+    const expected_return_value = [_]u8{};
+    const expected_gas_consumed = (3 * 2) + 3;
+    const expected_stack = [_]u256{ 0x08, 0x06 };
     const expected_memory = [_]u256{};
     try testBytecode(&bytecode, &expected_return_value, expected_gas_consumed, &expected_stack, &expected_memory);
 }

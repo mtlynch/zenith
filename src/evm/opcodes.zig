@@ -21,6 +21,7 @@ pub const OpCode = enum(u8) {
     PUSH32 = evmc.OP_PUSH32,
     MSTORE = evmc.OP_MSTORE,
     PC = evmc.OP_PC,
+    SWAP1 = evmc.OP_SWAP1,
     RETURN = evmc.OP_RETURN,
     _,
 };
