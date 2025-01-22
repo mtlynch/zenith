@@ -18,7 +18,7 @@ jobs:
           at: ./
       - run:
           name: Run unit tests
-          command: nix develop --command zig build test --summary all
+          command: nix run .#test
   compile_test_cases:
     executor: nix
     steps:
@@ -30,11 +30,10 @@ jobs:
           at: ./
       - run:
           name: Compile mnc
-          command: nix develop --command bash -c \
-              'zig build -Doptimize=ReleaseSafe --verbose'
+          command: nix run .#build-release-safe
       - run:
           name: Compile test cases
-          command: nix develop --command ./dev-scripts/compile-testcases
+          command: nix run .#compile-testcases
       - persist_to_workspace:
           root: ./
           paths:
@@ -51,10 +50,8 @@ jobs:
       - run:
           name: Benchmark zenith
           command: |
-            nix develop --command bash -c \
-              'zig build -Doptimize=ReleaseFast --verbose'
-            nix develop --command bash -c \
-              'dev-scripts/benchmark-all-inputs ./zig-out/bin/zenith 30'
+            nix run .#build-release-fast
+            nix run .#benchmark
       - persist_to_workspace:
           root: ./
           paths:
