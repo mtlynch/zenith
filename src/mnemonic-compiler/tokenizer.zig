@@ -14,7 +14,7 @@ pub fn tokenize(reader: anytype, allocator: std.mem.Allocator) ![][:0]const u8 {
             continue;
         }
 
-        var iter = std.mem.split(u8, line, " ");
+        var iter = std.mem.tokenizeScalar(u8, line, ' ');
         while (iter.next()) |token| {
             if (token.len == 0) {
                 continue;
