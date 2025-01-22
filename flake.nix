@@ -2,27 +2,35 @@
   description = "Dev environment for zenith";
 
   inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
-
-    # 0.13.0
-    zls_dep.url = "github:NixOS/nixpkgs/c3392ad349a5227f4a3464dce87bcc5046692fce";
-
-    # 0.13.0
-    zig_dep.url = "github:NixOS/nixpkgs/ed0af8c19f55bede71dc9c2002185cf228339901";
+    zig-overlay.url = "github:mitchellh/zig-overlay";
+    zls-overlay.url = "github:zigtools/zls";
   };
 
-  outputs = { self, flake-utils, zig_dep, zls_dep }@inputs :
-    flake-utils.lib.eachDefaultSystem (system:
+  outputs = { self, nixpkgs, flake-utils, ... }@inputs:
+    flake-utils.lib.eachSystem (builtins.attrNames inputs.zig-overlay.packages) (system:
     let
-      zig_dep = inputs.zig_dep.legacyPackages.${system};
-      zls_dep = inputs.zls_dep.legacyPackages.${system};
+      pkgs = import nixpkgs {
+        inherit system;
+        overlays = [
+          (final: prev: {
+            zigpkgs = inputs.zig-overlay.packages.${prev.system};
+          })
+        ];
+      };
+      zigVersion = "master-2025-01-20";
+      zig = pkgs.zigpkgs.${zigVersion};
+      zls = inputs.zls-overlay.packages.${system}.zls.overrideAttrs (old: {
+        nativeBuildInputs = [ zig ];
+      });
     in
     {
-      devShells.default = zig_dep.mkShell {
-        packages = [
-          zig_dep.xxd
-          zig_dep.zig
-          zls_dep.zls
+      devShells.default = pkgs.mkShell {
+        packages = with pkgs; [
+          xxd
+          zig
+          zls
         ];
 
         shellHook = ''
